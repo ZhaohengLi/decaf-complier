@@ -63,15 +63,15 @@ ExtendsClause   :   EXTENDS Id
 FieldList       :   STATIC Type Id '(' VarList ')' Block FieldList
                     {
                         $$ = $8;
-                        // add 'false' as second parameter to pass compile
-                        $$.fieldList.add(0, new MethodDef(true, false, $3.id, $2.type, $5.varList, $7.block, $3.pos));
+                        // change parameter to pass compile
+                        $$.fieldList.add(0, new MethodDef(Modifiers.STATIC, $3.id, $2.type, $5.varList, $7.block, $3.pos));
                     }
                 |   Type Id AfterIdField FieldList
                     {
                         $$ = $4;
                         if ($3.varList != null) {
-                            // add 'false' as second parameter to pass compile
-                            $$.fieldList.add(0, new MethodDef(false, false, $2.id, $1.type, $3.varList, $3.block, $2.pos));
+                            // change parameter to pass compile
+                            $$.fieldList.add(0, new MethodDef(0, $2.id, $1.type, $3.varList, $3.block, $2.pos));
                         } else {
                             $$.fieldList.add(0, new VarDef($1.type, $2.id, $2.pos));
                         }
