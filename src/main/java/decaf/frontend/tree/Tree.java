@@ -195,15 +195,18 @@ public abstract class Tree {
         public TypeLit returnType;
         public List<LocalVarDef> params;
         public Block body;
+        public final Optional<Block> mark = Optional.empty();
         // For convenience
         public String name;
         // For type check
         public FunType type;
         public MethodSymbol symbol;
 
-        public MethodDef(boolean isStatic, Id id, TypeLit returnType, List<LocalVarDef> params, Block body, Pos pos) {
+        public MethodDef(boolean isStatic, boolean isAbstract, Id id, TypeLit returnType, List<LocalVarDef> params, Block body, Pos pos) {
             super(Kind.METHOD_DEF, "MethodDef", pos);
-            this.modifiers = isStatic ? new Modifiers(Modifiers.STATIC, pos) : new Modifiers();
+            if (isStatic) this.modifiers = new Modifiers(Modifiers.STATIC, pos);
+            else if (isAbstract) this.modifiers = new Modifiers(Modifiers.ABSTRACT, pos);
+            else this.modifiers = new Modifiers();
             this.id = id;
             this.returnType = returnType;
             this.params = params;
@@ -215,8 +218,20 @@ public abstract class Tree {
             return modifiers.isStatic();
         }
 
+        public boolean isAbstract() {
+            return modifiers.isAbstract();
+        }
+
         @Override
         public Object treeElementAt(int index) {
+            if (this.isAbstract()) return switch (index) {
+                case 0 -> modifiers;
+                case 1 -> id;
+                case 2 -> returnType;
+                case 3 -> params;
+                case 4 -> mark;
+                default -> throw new IndexOutOfBoundsException(index);
+            };
             return switch (index) {
                 case 0 -> modifiers;
                 case 1 -> id;
@@ -229,6 +244,7 @@ public abstract class Tree {
 
         @Override
         public int treeArity() {
+            // if (this.isAbstract()) return 4;
             return 5;
         }
 

@@ -112,11 +112,15 @@ Var             :   Type Id
 
 MethodDef       :   STATIC Type Id '(' VarList ')' Block
                     {
-                        $$ = svField(new MethodDef(true, $3.id, $2.type, $5.varList, $7.block, $3.pos));
+                        $$ = svField(new MethodDef(true, false, $3.id, $2.type, $5.varList, $7.block, $3.pos));
+                    }
+                |   ABSTRACT Type Id '(' VarList ')' ';'
+                    {
+                        $$ = svField(new MethodDef(false, true, $3.id, $2.type, $5.varList, null, $3.pos));
                     }
                 |   Type Id '(' VarList ')' Block
                     {
-                        $$ = svField(new MethodDef(false, $2.id, $1.type, $4.varList, $6.block, $2.pos));
+                        $$ = svField(new MethodDef(false, false, $2.id, $1.type, $4.varList, $6.block, $2.pos));
                     }
                 ;
 

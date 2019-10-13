@@ -130,7 +130,7 @@ class SemValue {
                 case Tokens.LESS_EQUAL -> "operator : <=";
                 case Tokens.NOT_EQUAL -> "operator : !=";
                 case Tokens.OR -> "operator : ||";
-                case Tokens.ABSTRACT -> "keyword  : abstract";
+                case Tokens.ABSTRACT -> "keyword : abstract";
                 default -> "operator : " + (char) code;
             };
             case CLASS -> "CLASS: " + clazz;
