@@ -1566,12 +1566,14 @@ public abstract class Tree {
 
         // Available modifiers:
         public static final int STATIC = 1;
+        public static final int ABSTRACT = 2;
 
         public Modifiers(int code, Pos pos) {
             this.code = code;
             this.pos = pos;
             flags = new ArrayList<>();
             if (isStatic()) flags.add("STATIC");
+            if (isAbstract()) flags.add("ABSTRACT");
         }
 
         public Modifiers() {
@@ -1579,7 +1581,11 @@ public abstract class Tree {
         }
 
         public boolean isStatic() {
-            return (code & 1) == 1;
+            return this.code == Modifiers.STATIC;
+        }
+
+        public boolean isAbstract() {
+            return this.code == Modifiers.ABSTRACT;
         }
 
         @Override
