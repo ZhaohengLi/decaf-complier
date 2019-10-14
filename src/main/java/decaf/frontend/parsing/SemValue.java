@@ -131,6 +131,7 @@ class SemValue {
                 case Tokens.NOT_EQUAL -> "operator : !=";
                 case Tokens.OR -> "operator : ||";
                 case Tokens.ABSTRACT -> "keyword : abstract";
+                case Tokens.NONETYPE -> "keyword : var";
                 default -> "operator : " + (char) code;
             };
             case CLASS -> "CLASS: " + clazz;

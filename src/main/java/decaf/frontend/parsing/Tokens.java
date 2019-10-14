@@ -37,6 +37,7 @@ public interface Tokens {
     int NOT_EQUAL = 30;
 
     int ABSTRACT = 1000;
+    int NONETYPE = 1001;
 
     // MUST use ASCII code to encode a single-character token.
     // '!' (code=33)

@@ -22,7 +22,7 @@ import java.util.Optional;
 %token BOOL_LIT     INT_LIT     STRING_LIT
 %token IDENTIFIER   AND         OR          STATIC      INSTANCE_OF
 %token LESS_EQUAL   GREATER_EQUAL           EQUAL       NOT_EQUAL
-%token ABSTRACT
+%token ABSTRACT     NONETYPE
 %token '+'  '-'  '*'  '/'  '%'  '='  '>'  '<'  '.'
 %token ','  ';'  '!'  '('  ')'  '['  ']'  '{'  '}'
 
@@ -232,7 +232,11 @@ StmtList        :   StmtList Stmt
                     }
                 ;
 
-SimpleStmt      :   Var Initializer
+SimpleStmt      :   NONETYPE Id '=' Expr
+                    {
+                        $$ = svStmt(new LocalVarDef(null, $2.id, $3.pos, Optional.ofNullable($4.expr), $2.pos));
+                    }
+                |   Var Initializer
                     {
                         $$ = svStmt(new LocalVarDef($1.type, $1.id, $2.pos, Optional.ofNullable($2.expr), $1.pos));
                     }

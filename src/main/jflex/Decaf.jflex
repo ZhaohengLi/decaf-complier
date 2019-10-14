@@ -69,6 +69,7 @@ BAD_ESC             = "\\"[^nrt\"\\]
 "instanceof"        { return keyword(Tokens.INSTANCE_OF);  }
 
 "abstract"          { return keyword(Tokens.ABSTRACT);     }
+"var"               { return keyword(Tokens.NONETYPE);     }
 
     // operators, with more than one character
 "<="                { return operator(Tokens.LESS_EQUAL);    }

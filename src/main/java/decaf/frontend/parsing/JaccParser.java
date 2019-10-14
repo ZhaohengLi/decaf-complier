@@ -72,6 +72,7 @@ public class JaccParser extends Phase<InputStream, Tree.TopLevel> {
                 case Tokens.STATIC -> decaf.frontend.parsing.JaccTokens.STATIC;
 
                 case Tokens.ABSTRACT -> decaf.frontend.parsing.JaccTokens.ABSTRACT;
+                case Tokens.NONETYPE -> decaf.frontend.parsing.JaccTokens.NONETYPE;
 
                 case Tokens.INSTANCE_OF -> decaf.frontend.parsing.JaccTokens.INSTANCE_OF;
                 case Tokens.LESS_EQUAL -> decaf.frontend.parsing.JaccTokens.LESS_EQUAL;

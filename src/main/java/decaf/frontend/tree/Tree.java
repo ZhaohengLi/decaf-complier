@@ -195,7 +195,6 @@ public abstract class Tree {
         public TypeLit returnType;
         public List<LocalVarDef> params;
         public Block body;
-        public final Optional<Block> emptyBody = Optional.empty();
         // For convenience
         public String name;
         // For type check
@@ -222,20 +221,12 @@ public abstract class Tree {
 
         @Override
         public Object treeElementAt(int index) {
-            if (this.isAbstract()) return switch (index) {
-                case 0 -> modifiers;
-                case 1 -> id;
-                case 2 -> returnType;
-                case 3 -> params;
-                case 4 -> emptyBody;
-                default -> throw new IndexOutOfBoundsException(index);
-            };
             return switch (index) {
                 case 0 -> modifiers;
                 case 1 -> id;
                 case 2 -> returnType;
                 case 3 -> params;
-                case 4 -> body;
+                case 4 -> this.isAbstract() ? Optional.empty() : body;
                 default -> throw new IndexOutOfBoundsException(index);
             };
         }
@@ -487,7 +478,7 @@ public abstract class Tree {
         @Override
         public Object treeElementAt(int index) {
             return switch (index) {
-                case 0 -> typeLit;
+                case 0 -> typeLit==null ? Optional.empty() : typeLit;
                 case 1 -> id;
                 case 2 -> initVal;
                 default -> throw new IndexOutOfBoundsException(index);
