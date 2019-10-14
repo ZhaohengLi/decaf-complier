@@ -299,9 +299,9 @@ Expr            :   Literal
                     {
                         $$ = svExpr($1.lValue);
                     }
-                |   Receiver Id '(' ExprList ')'
+                |   Expr '(' ExprList ')'
                     {
-                        $$ = svExpr(new Call(Optional.ofNullable($1.expr), $2.id, $4.exprList, $3.pos));
+                        $$ = svExpr(new Call($1.expr, $3.exprList, $2.pos));
                     }
                 |   Expr '+' Expr
                     {

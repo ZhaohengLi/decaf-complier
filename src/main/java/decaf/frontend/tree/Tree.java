@@ -1506,6 +1506,13 @@ public abstract class Tree {
             this(Optional.of(receiver), method, args, pos);
         }
 
+        public Call(Expr receiver, List<Expr> args, Pos pos) {
+          super(Kind.CALL, "Call", pos);
+          this.receiver = Optional.of(receiver);
+          this.method = null;
+          this.args = args;
+        }
+
         /**
          * Set its receiver as {@code this}.
          * <p>
@@ -1517,6 +1524,11 @@ public abstract class Tree {
 
         @Override
         public Object treeElementAt(int index) {
+            if (method == null) return switch (index) {
+                case 0 -> receiver;
+                case 1 -> args;
+                default -> throw new IndexOutOfBoundsException(index);
+            };
             return switch (index) {
                 case 0 -> receiver;
                 case 1 -> method;
@@ -1527,6 +1539,7 @@ public abstract class Tree {
 
         @Override
         public int treeArity() {
+          if (method == null) return 2;
             return 3;
         }
 
