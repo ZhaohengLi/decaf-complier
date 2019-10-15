@@ -34,6 +34,10 @@ public interface Visitor<C> {
         visitOthers(that, ctx);
     }
 
+    default void visitTLambda(Tree.TLambda that, C ctx) {
+        visitOthers(that, ctx);
+    }
+
     default void visitTString(Tree.TString that, C ctx) {
         visitOthers(that, ctx);
     }

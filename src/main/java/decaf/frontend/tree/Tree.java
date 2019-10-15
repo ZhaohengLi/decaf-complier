@@ -25,7 +25,8 @@ public abstract class Tree {
         T_INT, T_BOOL, T_STRING, T_VOID, T_CLASS, T_ARRAY,
         LOCAL_VAR_DEF, BLOCK, ASSIGN, EXPR_EVAL, SKIP, IF, WHILE, FOR, BREAK, RETURN, PRINT,
         INT_LIT, BOOL_LIT, STRING_LIT, NULL_LIT, VAR_SEL, INDEX_SEL, CALL,
-        THIS, UNARY_EXPR, BINARY_EXPR, READ_INT, READ_LINE, NEW_CLASS, NEW_ARRAY, CLASS_TEST, CLASS_CAST
+        THIS, UNARY_EXPR, BINARY_EXPR, READ_INT, READ_LINE, NEW_CLASS, NEW_ARRAY, CLASS_TEST, CLASS_CAST,
+        T_LAMBDA
     }
 
     /**
@@ -201,9 +202,9 @@ public abstract class Tree {
         public FunType type;
         public MethodSymbol symbol;
 
-        public MethodDef(int mark, Id id, TypeLit returnType, List<LocalVarDef> params, Block body, Pos pos) {
+        public MethodDef(int modifiersMark, Id id, TypeLit returnType, List<LocalVarDef> params, Block body, Pos pos) {
             super(Kind.METHOD_DEF, "MethodDef", pos);
-            this.modifiers = mark==0 ? new Modifiers() : new Modifiers(mark, pos);
+            this.modifiers = modifiersMark==0 ? new Modifiers() : new Modifiers(modifiersMark, pos);
             this.id = id;
             this.returnType = returnType;
             this.params = params;
@@ -254,6 +255,36 @@ public abstract class Tree {
 
         public TypeLit(Kind kind, String displayName, Pos pos) {
             super(kind, displayName, pos);
+        }
+    }
+
+    public static class TLambda extends TypeLit {
+        public TypeLit returnType;
+        public List<TypeLit> paramsType;
+
+        public TLambda(TypeLit returnType, List<TypeLit> paramsType, Pos pos) {
+            super(Kind.T_LAMBDA, "TLambda", pos);
+            this.returnType = returnType;
+            this.paramsType = paramsType;
+        }
+
+        @Override
+        public Object treeElementAt(int index) {
+            return switch (index){
+              case 0 -> returnType;
+              case 1 -> paramsType;
+              default -> throw new IndexOutOfBoundsException(index);
+            };
+        }
+
+        @Override
+        public int treeArity() {
+            return 2;
+        }
+
+        @Override
+        public <C> void accept(Visitor<C> v, C ctx) {
+            v.visitTLambda(this, ctx);
         }
     }
 

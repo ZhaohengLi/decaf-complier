@@ -171,6 +171,25 @@ Type            :   INT
                     {
                         $$ = svType(new TArray($1.type, $1.type.pos));
                     }
+                |   Type '(' TypeList ')'
+                    {
+                        $$ = svType(new TLambda($1.type, $3.typeList, $1.pos));
+                    }
+                |   Type '(' ')'
+                    {
+                        $$ = svType(new TLambda($1.type, svTypes().typeList, $1.pos));
+                    }
+                ;
+
+TypeList        :   TypeList ',' Type
+                    {
+                        $$ = $1;
+                        $$.typeList.add($3.type);
+                    }
+                |   Type
+                    {
+                        $$ = svTypes($1.type);
+                    }
                 ;
 
 // Statements
