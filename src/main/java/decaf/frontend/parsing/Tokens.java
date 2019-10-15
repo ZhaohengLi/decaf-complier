@@ -38,6 +38,8 @@ public interface Tokens {
 
     int ABSTRACT = 1000;
     int NONETYPE = 1001;
+    int FUN = 1002;
+    int GOSETO = 1003;
 
     // MUST use ASCII code to encode a single-character token.
     // '!' (code=33)

@@ -26,7 +26,7 @@ public abstract class Tree {
         LOCAL_VAR_DEF, BLOCK, ASSIGN, EXPR_EVAL, SKIP, IF, WHILE, FOR, BREAK, RETURN, PRINT,
         INT_LIT, BOOL_LIT, STRING_LIT, NULL_LIT, VAR_SEL, INDEX_SEL, CALL,
         THIS, UNARY_EXPR, BINARY_EXPR, READ_INT, READ_LINE, NEW_CLASS, NEW_ARRAY, CLASS_TEST, CLASS_CAST,
-        T_LAMBDA
+        T_LAMBDA, LAMBDA
     }
 
     /**
@@ -922,6 +922,43 @@ public abstract class Tree {
         public Expr(Kind kind, String displayName, Pos pos) {
             super(kind, displayName, pos);
         }
+    }
+
+    public static class Lambda extends Expr {
+        public List<LocalVarDef> params;
+        public Expr expr;
+        public Block body;
+
+        public Lambda(List<LocalVarDef> params, Block body, Pos pos) {
+            super(Kind.LAMBDA, "Lambda", pos);
+            this.expr = null;
+            this.params = params;
+            this.body = body;
+        }
+        public Lambda(List<LocalVarDef> params, Expr expr, Pos pos) {
+            super(Kind.LAMBDA, "Lambda", pos);
+            this.expr = expr;
+            this.params = params;
+            this.body = null;
+        }
+        @Override
+        public Object treeElementAt(int index) {
+            return switch (index) {
+                case 0 -> params;
+                case 1 -> expr==null ? body : expr;
+                default -> throw new IndexOutOfBoundsException(index);
+            };
+      }
+
+      @Override
+      public int treeArity() {
+          return 2;
+      }
+
+      @Override
+      public <C> void accept(Visitor<C> v, C ctx) {
+          v.visitLambda(this, ctx);
+      }
     }
 
     /**

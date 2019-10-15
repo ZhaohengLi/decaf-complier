@@ -22,10 +22,11 @@ import java.util.Optional;
 %token BOOL_LIT     INT_LIT     STRING_LIT
 %token IDENTIFIER   AND         OR          STATIC      INSTANCE_OF
 %token LESS_EQUAL   GREATER_EQUAL           EQUAL       NOT_EQUAL
-%token ABSTRACT     NONETYPE
+%token ABSTRACT     NONETYPE    FUN         GOSETO
 %token '+'  '-'  '*'  '/'  '%'  '='  '>'  '<'  '.'
 %token ','  ';'  '!'  '('  ')'  '['  ']'  '{'  '}'
 
+%nonassoc GOSETO
 %left OR
 %left AND
 %nonassoc EQUAL NOT_EQUAL
@@ -317,6 +318,14 @@ Expr            :   Literal
                 |   LValue
                     {
                         $$ = svExpr($1.lValue);
+                    }
+                |   FUN '(' VarList ')' GOSETO Expr
+                    {
+                        $$ = svExpr(new Lambda($3.varList, $6.expr, $1.pos));
+                    }
+                |   FUN '(' VarList ')' Block
+                    {
+                        $$ = svExpr(new Lambda($3.varList, $5.block, $1.pos));
                     }
                 |   Expr '(' ExprList ')'
                     {
