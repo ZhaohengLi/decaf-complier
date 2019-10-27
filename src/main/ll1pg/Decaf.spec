@@ -18,6 +18,7 @@ PRINT        READ_INTEGER            READ_LINE
 BOOL_LIT     INT_LIT     STRING_LIT
 IDENTIFIER   AND         OR          STATIC      INSTANCE_OF
 LESS_EQUAL   GREATER_EQUAL           EQUAL       NOT_EQUAL
+ABSTRACT     NONETYPE    FUN         GOSETO
 '+'  '-'  '*'  '/'  '%'  '='  '>'  '<'  '.'
 ','  ';'  '!'  '('  ')'  '['  ']'  '{'  '}'
 
@@ -45,8 +46,11 @@ ClassList       :   ClassDef ClassList
 
 ClassDef        :   CLASS Id ExtendsClause '{' FieldList '}'
                     {
-                        // add 'false' as first parameter to pass compile
                         $$ = svClass(new ClassDef(false, $2.id, Optional.ofNullable($3.id), $5.fieldList, $1.pos));
+                    }
+                |   ABSTRACT CLASS Id ExtendsClause '{' FieldList '}'
+                    {
+                        $$ = svClass(new ClassDef(true, $3.id, Optional.ofNullable($4.id), $6.fieldList, $2.pos));
                     }
                 ;
 
@@ -63,15 +67,18 @@ ExtendsClause   :   EXTENDS Id
 FieldList       :   STATIC Type Id '(' VarList ')' Block FieldList
                     {
                         $$ = $8;
-                        // change parameter to pass compile
                         $$.fieldList.add(0, new MethodDef(Modifiers.STATIC, $3.id, $2.type, $5.varList, $7.block, $3.pos));
+                    }
+                |   ABSTRACT Type Id '(' VarList ')' ';' FieldList
+                    {
+                        $$ = $8;
+                        $$.fieldList.add(0, new MethodDef(Modifiers.ABSTRACT, $3.id, $2.type, $5.varList, null, $3.pos));
                     }
                 |   Type Id AfterIdField FieldList
                     {
                         $$ = $4;
                         if ($3.varList != null) {
-                            // change parameter to pass compile
-                            $$.fieldList.add(0, new MethodDef(0, $2.id, $1.type, $3.varList, $3.block, $2.pos));
+                            $$.fieldList.add(0, new MethodDef(Modifiers.NONE, $2.id, $1.type, $3.varList, $3.block, $2.pos));
                         } else {
                             $$.fieldList.add(0, new VarDef($1.type, $2.id, $2.pos));
                         }
@@ -226,7 +233,11 @@ StmtList        :   Stmt StmtList
                     }
                 ;
 
-SimpleStmt      :   Var Initializer
+SimpleStmt      :   NONETYPE Id '=' Expr
+                    {
+                        $$ = svStmt(new LocalVarDef(null, $2.id, $3.pos, Optional.ofNullable($4.expr), $2.pos));
+                    }
+                |   Var Initializer
                     {
                         $$ = svStmt(new LocalVarDef($1.type, $1.id, $2.pos, Optional.ofNullable($2.expr), $1.pos));
                     }
@@ -532,13 +543,37 @@ ExprT6          :   Op6 Expr7 ExprT6
                     }
                 ;
 
-Expr7           :   Op7 Expr8
+Expr7           :   Op7 Expr7
                     {
                         $$ = svExpr(new Unary(UnaryOp.values()[$1.code], $2.expr, $1.pos));
+                    }
+                |   '(' AfterLParen
+                    {
+                        $$ = $2;
                     }
                 |   Expr8
                     {
                         $$ = $1;
+                    }
+                ;
+
+AfterLParen     :   CLASS Id ')' Expr7
+                    {
+                        $$ = svExpr(new ClassCast($4.expr, $2.id, $4.pos));
+                    }
+                |   Expr ')' ExprT8
+                    {
+                        $$ = $1;
+                        for (var sv : $3.thunkList) {
+                            if (sv.expr != null) {
+                                $$ = svExpr(new IndexSel($$.expr, sv.expr, sv.pos));
+                            } else if (sv.exprList != null) {
+                                $$ = svExpr(new Call($$.expr, sv.id, sv.exprList, sv.pos));
+                            } else {
+                                $$ = svExpr(new VarSel($$.expr, sv.id, sv.pos));
+                            }
+                        }
+                        $$.pos = $$.expr.pos;
                     }
                 ;
 
@@ -626,10 +661,6 @@ Expr9           :   Literal
                             $$ = svExpr(new NewArray($2.type, $2.expr, $1.pos));
                         }
                     }
-                |   '(' AfterParenExpr
-                    {
-                        $$ = $2;
-                    }
                 |   Id ExprListOpt
                     {
                         if ($2.exprList != null) {
@@ -681,16 +712,6 @@ AfterLBrack     :   ']' '[' AfterLBrack
                     {
                         $$ = svExpr($1.expr);
                         $$.intVal = 0; // counter
-                    }
-                ;
-
-AfterParenExpr  :   Expr ')'
-                    {
-                        $$ = $1;
-                    }
-                |   CLASS Id ')' Expr9
-                    {
-                        $$ = svExpr(new ClassCast($4.expr, $2.id, $4.pos));
                     }
                 ;
 

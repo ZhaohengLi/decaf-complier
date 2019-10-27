@@ -2,6 +2,7 @@ package decaf.frontend.parsing;
 
 import decaf.driver.Config;
 import decaf.driver.Phase;
+import decaf.driver.error.DecafError;
 import decaf.frontend.tree.Tree;
 import decaf.lowlevel.log.IndentPrinter;
 import decaf.printing.PrettyTree;
@@ -37,6 +38,22 @@ public class LLParser extends Phase<InputStream, Tree.TopLevel> {
             printer.pretty(tree);
             printer.flush();
         }
+    }
+    /**
+     * To avoid issuing the same error multiple times.
+     *
+     * @param error Decaf error
+     */
+    @Override
+    public void issue(DecafError error) {
+        if (!errors.isEmpty()) {
+            var last = errors.get(errors.size() - 1);
+            if (error.toString().equals(last.toString())) { // ignore
+                return;
+            }
+        }
+
+        super.issue(error);
     }
 
     private class Parser extends decaf.frontend.parsing.LLTable {
@@ -82,6 +99,12 @@ public class LLParser extends Phase<InputStream, Tree.TopLevel> {
                 case Tokens.GREATER_EQUAL -> GREATER_EQUAL;
                 case Tokens.EQUAL -> EQUAL;
                 case Tokens.NOT_EQUAL -> NOT_EQUAL;
+
+                case Tokens.ABSTRACT -> ABSTRACT;
+                case Tokens.NONETYPE -> NONETYPE;
+                case Tokens.FUN -> FUN;
+                case Tokens.GOSETO -> GOSETO;
+
                 default -> code; // single-character, use their ASCII code!
             };
         }
@@ -96,6 +119,15 @@ public class LLParser extends Phase<InputStream, Tree.TopLevel> {
          * @return the parsed value of {@code symbol} if parsing succeeds, or else {@code null}.
          */
         private SemValue parseSymbol(int symbol, Set<Integer> follow) {
+            follow.addAll(followSet(symbol));
+            if (!beginSet(symbol).contains(token)) {
+                yyerror("syntax error");
+                while(true) {
+                    if (beginSet(symbol).contains(token)) break;
+                    if (follow.contains(token)) return null;
+                    token = nextToken();
+                }
+            }
             var result = query(symbol, token); // get production by lookahead symbol
             var actionId = result.getKey(); // get user-defined action
 
@@ -110,7 +142,7 @@ public class LLParser extends Phase<InputStream, Tree.TopLevel> {
                         : matchToken(term) // for terminals: match token
                 ;
             }
-
+            for (var i = 1; i < (length+1); i++) if(params[i] == null) return null;
             act(actionId, params); // do user-defined action
             return params[0];
         }
