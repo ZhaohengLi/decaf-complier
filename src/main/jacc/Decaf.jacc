@@ -29,7 +29,7 @@ import java.util.Optional;
 %nonassoc GOSETO
 %left OR
 %left AND
-%nonassoc EQUAL NOT_EQUAL
+%left EQUAL NOT_EQUAL
 %nonassoc LESS_EQUAL GREATER_EQUAL '<' '>'
 %left  '+' '-'
 %left  '*' '/' '%'
@@ -121,7 +121,7 @@ MethodDef       :   STATIC Type Id '(' VarList ')' Block
                     }
                 |   Type Id '(' VarList ')' Block
                     {
-                        $$ = svField(new MethodDef(0, $2.id, $1.type, $4.varList, $6.block, $2.pos));
+                        $$ = svField(new MethodDef(Modifiers.NONE, $2.id, $1.type, $4.varList, $6.block, $2.pos));
                     }
                 ;
 

@@ -204,7 +204,7 @@ public abstract class Tree {
 
         public MethodDef(int modifiersMark, Id id, TypeLit returnType, List<LocalVarDef> params, Block body, Pos pos) {
             super(Kind.METHOD_DEF, "MethodDef", pos);
-            this.modifiers = modifiersMark==0 ? new Modifiers() : new Modifiers(modifiersMark, pos);
+            this.modifiers = new Modifiers(modifiersMark, pos);
             this.id = id;
             this.returnType = returnType;
             this.params = params;
@@ -1655,6 +1655,7 @@ public abstract class Tree {
         // Available modifiers:
         public static final int STATIC = 1;
         public static final int ABSTRACT = 2;
+        public static final int NONE = 0;
 
         public Modifiers(int code, Pos pos) {
             this.code = code;
