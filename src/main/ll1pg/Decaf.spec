@@ -403,6 +403,14 @@ Expr            :   Expr1
                     {
                         $$ = $1;
                     }
+                |   FUN '(' VarList ')' FUNExpr
+                    {
+                        if ($5.expr != null) {
+                            $$ = svExpr(new Lambda($3.varList, $5.expr, $1.pos));
+                        } else if ($5.block != null) {
+                            $$ = svExpr(new Lambda($3.varList, $5.block, $1.pos));
+                        }
+                    }
                 ;
 
 Expr1           :   Expr2 ExprT1
@@ -668,6 +676,16 @@ Expr9           :   Literal
                         } else {
                             $$ = svExpr(new VarSel($1.id, $1.pos));
                         }
+                    }
+                ;
+
+FUNExpr         :   GOSETO Expr
+                    {
+                        $$ = $2;
+                    }
+                |   Block
+                    {
+                        $$ = $1;
                     }
                 ;
 
