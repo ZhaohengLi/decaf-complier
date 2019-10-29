@@ -153,26 +153,61 @@ AtomType        :   INT
                     }
                 ;
 
-Type            :   AtomType ArrayType
-                    {
-                        $$ = $1;
-                        for (int i = 0; i < $2.intVal; i++) {
-                            $$.type = new TArray($$.type, $1.type.pos);
-                        }
-                    }
-                ;
+                Type            :   AtomType ArrayType
+                                    {
+                                        $$ = $1;
+                                        for (int i = 0; i < $2.intVal; i++) {
+                                            if ($2.thunkList.get(i) == null){
+                                                $$.type = new TArray($$.type, $1.type.pos);
+                                            } else {
+                                                $$.type = new TLambda($$.type, $2.thunkList.get(i).typeList, $1.type.pos);
+                                            }
+                                        }
+                                    }
+                                ;
 
-ArrayType       :   '[' ']' ArrayType
-                    {
-                        $$ = $3;
-                        $$.intVal++;
-                    }
-                |   /* empty */
-                    {
-                        $$ = new SemValue();
-                        $$.intVal = 0; // counter
-                    }
-                ;
+                ArrayType       :   '[' ']' ArrayType
+                                    {
+                                        $$ = $3;
+                                        $$.intVal++;
+                                        $$.thunkList.add(0, null);
+                                    }
+                                |   '(' TypeList ')' ArrayType
+                                    {
+                                        $$ = $4;
+                                        $$.intVal++;
+                                        $$.thunkList.add(0, $2);
+                                    }
+                                |   /* empty */
+                                    {
+                                        $$ = new SemValue();
+                                        $$.thunkList = new ArrayList<>();
+                                        $$.intVal = 0; // counter
+                                    }
+                                ;
+
+                TypeList        :   Type TypeListEx
+                                    {
+                                        $$ = $2;
+                                        $$.typeList.add(0, $1.type);
+                                    }
+                                |   /* empty */
+                                    {
+                                        $$ = svTypes();
+                                    }
+                                ;
+
+                TypeListEx      :   ',' Type TypeListEx
+                                    {
+                                        $$ = $3;
+                                        $$.typeList.add(0, $2.type);
+                                    }
+                                |   /* empty */
+                                    {
+                                        $$ = svTypes();
+                                    }
+                                ;
+
 
 // Statements
 
