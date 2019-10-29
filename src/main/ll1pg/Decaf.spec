@@ -448,6 +448,16 @@ Expr            :   Expr1
                     }
                 ;
 
+FUNExpr         :   GOSETO Expr
+                    {
+                        $$ = $2;
+                    }
+                |   Block
+                    {
+                        $$ = $1;
+                    }
+                ;
+
 Expr1           :   Expr2 ExprT1
                     {
                         $$ = buildBinaryExpr($1, $2.thunkList);
@@ -711,16 +721,6 @@ Expr9           :   Literal
                         } else {
                             $$ = svExpr(new VarSel($1.id, $1.pos));
                         }
-                    }
-                ;
-
-FUNExpr         :   GOSETO Expr
-                    {
-                        $$ = $2;
-                    }
-                |   Block
-                    {
-                        $$ = $1;
                     }
                 ;
 
