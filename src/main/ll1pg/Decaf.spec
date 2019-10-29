@@ -621,7 +621,7 @@ AfterLParen     :   CLASS Id ')' Expr7
                             if (sv.expr != null) {
                                 $$ = svExpr(new IndexSel($$.expr, sv.expr, sv.pos));
                             } else if (sv.exprList != null) {
-                                $$ = svExpr(new Call($$.expr, sv.id, sv.exprList, sv.pos));
+                                $$ = svExpr(new Call($$.expr, sv.exprList, sv.pos));
                             } else {
                                 $$ = svExpr(new VarSel($$.expr, sv.id, sv.pos));
                             }
@@ -637,7 +637,7 @@ Expr8           :   Expr9 ExprT8
                             if (sv.expr != null) {
                                 $$ = svExpr(new IndexSel($$.expr, sv.expr, sv.pos));
                             } else if (sv.exprList != null) {
-                                $$ = svExpr(new Call($$.expr, sv.id, sv.exprList, sv.pos));
+                                $$ = svExpr(new Call($$.expr, sv.exprList, sv.pos));
                             } else {
                                 $$ = svExpr(new VarSel($$.expr, sv.id, sv.pos));
                             }
@@ -655,36 +655,37 @@ ExprT8          :   '[' Expr ']' ExprT8
                         $$ = $4;
                         $$.thunkList.add(0, sv);
                     }
-                |   '.' Id ExprListOpt ExprT8
+                |   '.' Id  ExprT8
                     {
                         var sv = new SemValue();
                         sv.id = $2.id;
                         sv.pos = $2.pos;
-                        if ($3.exprList != null) {
-                            sv.exprList = $3.exprList;
-                            sv.pos = $3.pos;
-                        }
 
-                        $$ = $4;
+
+                        $$ = $3;
                         $$.thunkList.add(0, sv);
                     }
-                |   /* empty */
+                |  '(' ExprList ')'  ExprT8
+                    {
+                    var sv = new SemValue();
+                    sv.pos = $1.pos;
+
+                    if ($2.exprList != null) {
+                        sv.exprList = $2.exprList;
+                
+                    }
+                    $$ = $4;
+                    $$.thunkList.add(0, sv);
+                    }
+
+                | /* empty */
                     {
                         $$ = new SemValue();
                         $$.thunkList = new ArrayList<>();
                     }
                 ;
 
-ExprListOpt     :   '(' ExprList ')'
-                    {
-                        $$ = $2;
-                        $$.pos = $1.pos;
-                    }
-                |   /* empty */
-                    {
-                        $$ = new SemValue();
-                    }
-                ;
+
 
 Expr9           :   Literal
                     {
@@ -714,13 +715,11 @@ Expr9           :   Literal
                             $$ = svExpr(new NewArray($2.type, $2.expr, $1.pos));
                         }
                     }
-                |   Id ExprListOpt
+                |   Id
                     {
-                        if ($2.exprList != null) {
-                            $$ = svExpr(new Call($1.id, $2.exprList, $2.pos));
-                        } else {
+
                             $$ = svExpr(new VarSel($1.id, $1.pos));
-                        }
+
                     }
                 ;
 
