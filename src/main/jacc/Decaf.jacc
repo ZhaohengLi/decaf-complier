@@ -24,7 +24,9 @@ import java.util.Optional;
 %token LESS_EQUAL   GREATER_EQUAL           EQUAL       NOT_EQUAL
 %token '+'  '-'  '*'  '/'  '%'  '='  '>'  '<'  '.'
 %token ','  ';'  '!'  '('  ')'  '['  ']'  '{'  '}'
+%token ABSTRACT     NONETYPE    FUN         GOSETO
 
+%nonassoc GOSETO
 %left OR
 %left AND
 %left EQUAL NOT_EQUAL
@@ -69,7 +71,11 @@ ClassList       :   ClassList ClassDef
 
 ClassDef        :   CLASS Id ExtendsClause '{' FieldList '}'
                     {
-                        $$ = svClass(new ClassDef($2.id, Optional.ofNullable($3.id), $5.fieldList, $1.pos));
+                        $$ = svClass(new ClassDef(false, $2.id, Optional.ofNullable($3.id), $5.fieldList, $1.pos));
+                    }
+                |   ABSTRACT CLASS Id ExtendsClause '{' FieldList '}'
+                    {
+                        $$ = svClass(new ClassDef(true, $3.id, Optional.ofNullable($4.id), $6.fieldList, $2.pos));
                     }
                 ;
 
@@ -107,11 +113,15 @@ Var             :   Type Id
 
 MethodDef       :   STATIC Type Id '(' VarList ')' Block
                     {
-                        $$ = svField(new MethodDef(true, $3.id, $2.type, $5.varList, $7.block, $3.pos));
+                        $$ = svField(new MethodDef(Modifiers.STATIC, $3.id, $2.type, $5.varList, $7.block, $3.pos));
+                    }
+                |   ABSTRACT Type Id '(' VarList ')' ';'
+                    {
+                        $$ = svField(new MethodDef(Modifiers.ABSTRACT, $3.id, $2.type, $5.varList, null, $3.pos));
                     }
                 |   Type Id '(' VarList ')' Block
                     {
-                        $$ = svField(new MethodDef(false, $2.id, $1.type, $4.varList, $6.block, $2.pos));
+                        $$ = svField(new MethodDef(0, $2.id, $1.type, $4.varList, $6.block, $2.pos));
                     }
                 ;
 
@@ -161,6 +171,25 @@ Type            :   INT
                 |   Type '[' ']'
                     {
                         $$ = svType(new TArray($1.type, $1.type.pos));
+                    }
+                |   Type '(' TypeList ')'
+                    {
+                        $$ = svType(new TLambda($1.type, $3.typeList, $1.pos));
+                    }
+                |   Type '(' ')'
+                    {
+                        $$ = svType(new TLambda($1.type, svTypes().typeList, $1.pos));
+                    }
+                ;
+
+TypeList        :   TypeList ',' Type
+                    {
+                        $$ = $1;
+                        $$.typeList.add($3.type);
+                    }
+                |   Type
+                    {
+                        $$ = svTypes($1.type);
                     }
                 ;
 
@@ -223,7 +252,11 @@ StmtList        :   StmtList Stmt
                     }
                 ;
 
-SimpleStmt      :   Var Initializer
+SimpleStmt      :   NONETYPE Id '=' Expr
+                    {
+                        $$ = svStmt(new LocalVarDef(null, $2.id, $3.pos, Optional.ofNullable($4.expr), $2.pos));
+                    }
+                |   Var Initializer
                     {
                         $$ = svStmt(new LocalVarDef($1.type, $1.id, $2.pos, Optional.ofNullable($2.expr), $1.pos));
                     }
@@ -286,9 +319,17 @@ Expr            :   Literal
                     {
                         $$ = svExpr($1.lValue);
                     }
-                |   Receiver Id '(' ExprList ')'
+                |   FUN '(' VarList ')' GOSETO Expr
                     {
-                        $$ = svExpr(new Call(Optional.ofNullable($1.expr), $2.id, $4.exprList, $3.pos));
+                        $$ = svExpr(new Lambda($3.varList, $6.expr, $1.pos));
+                    }
+                |   FUN '(' VarList ')' Block
+                    {
+                        $$ = svExpr(new Lambda($3.varList, $5.block, $1.pos));
+                    }
+                |   Expr '(' ExprList ')'
+                    {
+                        $$ = svExpr(new Call($1.expr, $3.exprList, $2.pos));
                     }
                 |   Expr '+' Expr
                     {

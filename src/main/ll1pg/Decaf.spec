@@ -45,7 +45,8 @@ ClassList       :   ClassDef ClassList
 
 ClassDef        :   CLASS Id ExtendsClause '{' FieldList '}'
                     {
-                        $$ = svClass(new ClassDef($2.id, Optional.ofNullable($3.id), $5.fieldList, $1.pos));
+                        // add 'false' as first parameter to pass compile
+                        $$ = svClass(new ClassDef(false, $2.id, Optional.ofNullable($3.id), $5.fieldList, $1.pos));
                     }
                 ;
 
@@ -62,13 +63,15 @@ ExtendsClause   :   EXTENDS Id
 FieldList       :   STATIC Type Id '(' VarList ')' Block FieldList
                     {
                         $$ = $8;
-                        $$.fieldList.add(0, new MethodDef(true, $3.id, $2.type, $5.varList, $7.block, $3.pos));
+                        // change parameter to pass compile
+                        $$.fieldList.add(0, new MethodDef(Modifiers.STATIC, $3.id, $2.type, $5.varList, $7.block, $3.pos));
                     }
                 |   Type Id AfterIdField FieldList
                     {
                         $$ = $4;
                         if ($3.varList != null) {
-                            $$.fieldList.add(0, new MethodDef(false, $2.id, $1.type, $3.varList, $3.block, $2.pos));
+                            // change parameter to pass compile
+                            $$.fieldList.add(0, new MethodDef(0, $2.id, $1.type, $3.varList, $3.block, $2.pos));
                         } else {
                             $$.fieldList.add(0, new VarDef($1.type, $2.id, $2.pos));
                         }
