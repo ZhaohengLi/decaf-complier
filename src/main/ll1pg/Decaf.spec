@@ -71,7 +71,7 @@ FieldList       :   STATIC Type Id '(' VarList ')' Block FieldList
                         $$ = $4;
                         if ($3.varList != null) {
                             // change parameter to pass compile
-                            $$.fieldList.add(0, new MethodDef(0, $2.id, $1.type, $3.varList, $3.block, $2.pos));
+                            $$.fieldList.add(0, new MethodDef(Modifiers.NONE, $2.id, $1.type, $3.varList, $3.block, $2.pos));
                         } else {
                             $$.fieldList.add(0, new VarDef($1.type, $2.id, $2.pos));
                         }
