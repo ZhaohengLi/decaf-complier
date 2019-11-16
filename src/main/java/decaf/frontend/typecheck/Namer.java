@@ -231,18 +231,18 @@ public class Namer extends Phase<Tree.TopLevel, Tree.TopLevel> implements TypeLi
                     System.out.println("两个都是抽象函数");
                     var formal = new FormalScope();
                     typeMethod(method, ctx, formal);
-                    if (method.type.subtypeOf(suspect.type)){
+                    if (method.type.subtypeOf(suspect.type)){ //类型正确
                         var symbol = new MethodSymbol(method.name, method.type, formal, method.pos, method.modifiers, ctx.currentClass());
                         ctx.declare(symbol);
                         method.symbol = symbol;
-                    } else {
+                    } else { //类型不正确
                         issue(new BadOverrideError(method.pos, method.name, suspect.owner.name));
                     }
                 } else if (suspect.isAbstract() && !method.isAbstract() && !method.isStatic()) { //前一个抽象 后一个正常
                     System.out.println("前一个抽象 后一个正常");
                     var formal = new FormalScope();
                     typeMethod(method, ctx, formal);
-                    if (method.type.subtypeOf(suspect.type)) { // override success
+                    if (method.type.subtypeOf(suspect.type)) { // 类型正确
                         System.out.println("method.type is "+method.type);
                         System.out.println("suspect.type is "+suspect.type);
                         var symbol = new MethodSymbol(method.name, method.type, formal, method.pos, method.modifiers, ctx.currentClass());
@@ -253,21 +253,21 @@ public class Namer extends Phase<Tree.TopLevel, Tree.TopLevel> implements TypeLi
                         ctx.close();
                         ctx.currentClass().abstractMethods.remove(method.name);
                         System.out.println(ctx.currentClass().name + " remove " + method.name + " . Now length is " + ctx.currentClass().abstractMethods.size());
-                    } else {
+                    } else { //类型不正确
                         issue(new BadOverrideError(method.pos, method.name, suspect.owner.name));
                     }
                 } else if (!suspect.isAbstract() && !suspect.isStatic() && !method.isAbstract() && !method.isStatic()){ //两个都是正常函数
                     System.out.println("两个都是正常函数");
                     var formal = new FormalScope();
                     typeMethod(method, ctx, formal);
-                    if (method.type.subtypeOf(suspect.type)) { // override success
+                    if (method.type.subtypeOf(suspect.type)) { // 类型正确
                         var symbol = new MethodSymbol(method.name, method.type, formal, method.pos, method.modifiers, ctx.currentClass());
                         ctx.declare(symbol);
                         method.symbol = symbol;
                         ctx.open(formal);
                         method.body.accept(this, ctx);
                         ctx.close();
-                    } else { //参数类型不对
+                    } else { //参数类型不正确
                         issue(new BadOverrideError(method.pos, method.name, suspect.owner.name));
                     }
                 } else { //非以上列出的情况
