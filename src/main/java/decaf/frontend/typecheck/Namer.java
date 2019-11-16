@@ -195,8 +195,10 @@ public class Namer extends Phase<Tree.TopLevel, Tree.TopLevel> implements TypeLi
 
     @Override
     public void visitVarDef(Tree.VarDef varDef, ScopeStack ctx) {
+        System.out.println("visitVarDef " + varDef.name);
+        System.out.println("check 1");
         varDef.typeLit.accept(this, ctx);
-
+        System.out.println("check 2");
         var earlier = ctx.findConflict(varDef.name);
         if (earlier.isPresent()) {
             if (earlier.get().isVarSymbol() && earlier.get().domain() != ctx.currentScope()) {
@@ -221,7 +223,7 @@ public class Namer extends Phase<Tree.TopLevel, Tree.TopLevel> implements TypeLi
 
     @Override
     public void visitMethodDef(Tree.MethodDef method, ScopeStack ctx) {
-        System.out.println("method.name is "+method.name);
+        System.out.println("visitMethodDef "+method.name);
         var earlier = ctx.findConflict(method.name);
         if (earlier.isPresent()) {//命名有冲突
             System.out.println("earlier.isPresent()");
@@ -297,6 +299,7 @@ public class Namer extends Phase<Tree.TopLevel, Tree.TopLevel> implements TypeLi
     }
 
     private void typeMethod(Tree.MethodDef method, ScopeStack ctx, FormalScope formal) {
+        System.out.println("typeMethod " + method.name);
         method.returnType.accept(this, ctx);
         ctx.open(formal);
         if (!method.isStatic()) ctx.declare(VarSymbol.thisVar(ctx.currentClass().type, method.id.pos));
@@ -321,6 +324,7 @@ public class Namer extends Phase<Tree.TopLevel, Tree.TopLevel> implements TypeLi
 
     @Override
     public void visitLocalVarDef(Tree.LocalVarDef def, ScopeStack ctx) {
+        System.out.println("visitLocalVarDef " + def.name);
         if (def.typeLit == null) { // var 类型出现
             var earlier = ctx.findConflict(def.name);
             if (earlier.isPresent()) { //命名冲突
