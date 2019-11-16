@@ -34,7 +34,9 @@ public final class VarSymbol extends Symbol {
 
     @Override
     protected String str() {
-        return String.format("variable %s%s : %s", isParam() ? "@" : "", name, type);
+        String str = String.format("variable %s%s : %s", isParam() ? "@" : "", name, type);
+        System.out.println(str);
+        return str;
     }
 
     public boolean isLocalVar() {

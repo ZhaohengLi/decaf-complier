@@ -79,7 +79,11 @@ public final class ClassSymbol extends Symbol {
 
     @Override
     protected String str() {
-        return "class " + name + parentSymbol.map(classSymbol -> " : " + classSymbol.name).orElse("");
+        String str;
+        if (isAbstract()) str = "ABSTRACT class " + name + parentSymbol.map(classSymbol -> " : " + classSymbol.name).orElse("");
+        else str = "class " + name + parentSymbol.map(classSymbol -> " : " + classSymbol.name).orElse("");
+        System.out.println(str);
+        return str;
     }
 
     /**

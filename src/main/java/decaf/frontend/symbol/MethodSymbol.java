@@ -45,7 +45,9 @@ public final class MethodSymbol extends Symbol {
     protected String str() {
         var modStr = modifiers.toString();
         if (!modStr.isEmpty()) modStr += " ";
-        return modStr + String.format("function %s : %s", name, type);
+        String str = modStr + String.format("function %s : %s", name, type);
+        System.out.println(str);
+        return str;
     }
 
     /**
