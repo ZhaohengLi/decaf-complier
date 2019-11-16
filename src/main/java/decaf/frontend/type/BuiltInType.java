@@ -11,6 +11,7 @@ public final class BuiltInType extends Type {
         this.name = name;
     }
 
+    public static final BuiltInType WAIT = new BuiltInType("wait");
     /**
      * Type {@code int}.
      */

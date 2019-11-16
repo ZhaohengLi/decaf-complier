@@ -548,6 +548,31 @@ public class Typer extends Phase<Tree.TopLevel, Tree.TopLevel> implements TypeLi
 
     @Override
     public void visitLocalVarDef(Tree.LocalVarDef stmt, ScopeStack ctx) {
+        if (stmt.symbol.type.eq(BuiltInType.WAIT)){
+            assert(!stmt.initVal.isEmpty());//var类型等号后面不能为空
+            var initVal = stmt.initVal.get();
+            localVarDefPos = Optional.ofNullable(stmt.id.pos);
+            initVal.accept(this, ctx);
+            localVarDefPos = Optional.empty();
+            stmt.symbol.type = initVal.type;
+            if (stmt.symbol.type == BuiltInType.VOID) {
+                issue(new BadVarTypeError(stmt.pos, stmt.name));
+            }
+        } else {
+            if (stmt.initVal.isEmpty()) return;
+
+            var initVal = stmt.initVal.get();
+            localVarDefPos = Optional.ofNullable(stmt.id.pos);
+            initVal.accept(this, ctx);
+            localVarDefPos = Optional.empty();
+            var lt = stmt.symbol.type;
+            var rt = initVal.type;
+
+            if (lt.noError() && (lt.isFuncType() || !rt.subtypeOf(lt))) {
+                issue(new IncompatBinOpError(stmt.assignPos, lt.toString(), "=", rt.toString()));
+            }
+        }
+        /*
         if (stmt.initVal.isEmpty()) return;
 
         var initVal = stmt.initVal.get();
@@ -560,6 +585,7 @@ public class Typer extends Phase<Tree.TopLevel, Tree.TopLevel> implements TypeLi
         if (lt.noError() && (lt.isFuncType() || !rt.subtypeOf(lt))) {
             issue(new IncompatBinOpError(stmt.assignPos, lt.toString(), "=", rt.toString()));
         }
+        */
     }
 
     // Only usage: check if an initializer cyclically refers to the declared variable, e.g. var x = x + 1

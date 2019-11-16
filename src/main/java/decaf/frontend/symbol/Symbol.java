@@ -20,7 +20,7 @@ public abstract class Symbol implements Comparable<Symbol> {
 
     public final String name;
 
-    public final Type type;
+    public Type type; //为了在var时可以方便的修改type 去掉了final关键字
 
     public final Pos pos;
 

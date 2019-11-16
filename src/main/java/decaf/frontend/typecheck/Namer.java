@@ -321,6 +321,37 @@ public class Namer extends Phase<Tree.TopLevel, Tree.TopLevel> implements TypeLi
 
     @Override
     public void visitLocalVarDef(Tree.LocalVarDef def, ScopeStack ctx) {
+        if (def.typeLit == null) { // var 类型出现
+            var earlier = ctx.findConflict(def.name);
+            if (earlier.isPresent()) { //命名冲突
+                issue(new DeclConflictError(def.pos, def.name, earlier.get().pos));
+                return;
+            } else { //命名无冲突
+                var symbol = new VarSymbol(def.name, BuiltInType.WAIT, def.id.pos);
+                ctx.declare(symbol);
+                def.symbol = symbol;
+            }
+        } else { // 不是 var 类型
+            def.typeLit.accept(this, ctx);
+
+            var earlier = ctx.findConflict(def.name);
+            if (earlier.isPresent()) {
+                issue(new DeclConflictError(def.pos, def.name, earlier.get().pos));
+                return;
+            }
+
+            if (def.typeLit.type.eq(BuiltInType.VOID)) {
+                issue(new BadVarTypeError(def.pos, def.name));
+                return;
+            }
+
+            if (def.typeLit.type.noError()) {
+                var symbol = new VarSymbol(def.name, def.typeLit.type, def.id.pos);
+                ctx.declare(symbol);
+                def.symbol = symbol;
+            }
+        }
+        /*
         def.typeLit.accept(this, ctx);
 
         var earlier = ctx.findConflict(def.name);
@@ -339,6 +370,7 @@ public class Namer extends Phase<Tree.TopLevel, Tree.TopLevel> implements TypeLi
             ctx.declare(symbol);
             def.symbol = symbol;
         }
+        */
     }
 
     @Override
