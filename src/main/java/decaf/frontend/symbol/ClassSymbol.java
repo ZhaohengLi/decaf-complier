@@ -3,6 +3,8 @@ package decaf.frontend.symbol;
 import decaf.frontend.scope.ClassScope;
 import decaf.frontend.scope.GlobalScope;
 import decaf.frontend.tree.Pos;
+import decaf.frontend.tree.Tree;
+import decaf.frontend.symbol.MethodSymbol;
 import decaf.frontend.type.ClassType;
 import decaf.lowlevel.tac.ClassInfo;
 
@@ -13,6 +15,8 @@ import java.util.TreeSet;
  * Class symbol, representing a class definition.
  */
 public final class ClassSymbol extends Symbol {
+    public final Tree.Modifiers modifiers;
+    public TreeSet<String> abstractMethods;
 
     public final Optional<ClassSymbol> parentSymbol;
 
@@ -23,20 +27,28 @@ public final class ClassSymbol extends Symbol {
      */
     public final ClassScope scope;
 
-    public ClassSymbol(String name, ClassType type, ClassScope scope, Pos pos) {
+    public ClassSymbol(String name, ClassType type, ClassScope scope, Pos pos, Tree.Modifiers modifiers) {
         super(name, type, pos);
         this.parentSymbol = Optional.empty();
         this.scope = scope;
         this.type = type;
+        this.modifiers = modifiers;
+        this.abstractMethods = new TreeSet<>();
         scope.setOwner(this);
     }
 
-    public ClassSymbol(String name, ClassSymbol parentSymbol, ClassType type, ClassScope scope, Pos pos) {
+    public ClassSymbol(String name, ClassSymbol parentSymbol, ClassType type, ClassScope scope, Pos pos, Tree.Modifiers modifiers) {
         super(name, type, pos);
         this.parentSymbol = Optional.of(parentSymbol);
         this.scope = scope;
         this.type = type;
+        this.modifiers = modifiers;
+        this.abstractMethods = new TreeSet<>();
         scope.setOwner(this);
+    }
+
+    public boolean isAbstract(){
+        return modifiers.isAbstract();
     }
 
     @Override

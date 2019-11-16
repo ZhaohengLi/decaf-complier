@@ -22,8 +22,7 @@ public final class MethodSymbol extends Symbol {
 
     public final ClassSymbol owner;
 
-    public MethodSymbol(String name, FunType type, FormalScope scope, Pos pos, Tree.Modifiers modifiers,
-                        ClassSymbol owner) {
+    public MethodSymbol(String name, FunType type, FormalScope scope, Pos pos, Tree.Modifiers modifiers, ClassSymbol owner) {
         super(name, type, pos);
         this.type = type;
         this.scope = scope;
@@ -67,6 +66,10 @@ public final class MethodSymbol extends Symbol {
 
     public boolean isStatic() {
         return modifiers.isStatic();
+    }
+
+    public boolean isAbstract() {
+        return modifiers.isAbstract();
     }
 
     private boolean main = false;
