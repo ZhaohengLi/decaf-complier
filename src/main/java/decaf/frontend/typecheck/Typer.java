@@ -91,6 +91,7 @@ public class Typer extends Phase<Tree.TopLevel, Tree.TopLevel> implements TypeLi
 
     @Override
     public void visitAssign(Tree.Assign stmt, ScopeStack ctx) {
+        System.out.println("Typer visitAssign");
         stmt.lhs.accept(this, ctx);
         stmt.rhs.accept(this, ctx);
         var lt = stmt.lhs.type;
@@ -98,6 +99,7 @@ public class Typer extends Phase<Tree.TopLevel, Tree.TopLevel> implements TypeLi
 
         if (lt.noError() && (lt.isFuncType() || !rt.subtypeOf(lt))) {
             issue(new IncompatBinOpError(stmt.pos, lt.toString(), "=", rt.toString()));
+            System.out.println("IncompatBinOpError");
         }
     }
 
@@ -239,11 +241,13 @@ public class Typer extends Phase<Tree.TopLevel, Tree.TopLevel> implements TypeLi
 
     @Override
     public void visitBinary(Tree.Binary expr, ScopeStack ctx) {
+        System.out.println("Typer visitBinary");
         expr.lhs.accept(this, ctx);
         expr.rhs.accept(this, ctx);
         var t1 = expr.lhs.type;
         var t2 = expr.rhs.type;
         if (t1.noError() && t2.noError() && !compatible(expr.op, t1, t2)) {
+            System.out.println("IncompatBinOpError");
             issue(new IncompatBinOpError(expr.pos, t1.toString(), Tree.opStr(expr.op), t2.toString()));
         }
         expr.type = resultTypeOf(expr.op);
@@ -548,6 +552,7 @@ public class Typer extends Phase<Tree.TopLevel, Tree.TopLevel> implements TypeLi
 
     @Override
     public void visitLocalVarDef(Tree.LocalVarDef stmt, ScopeStack ctx) {
+        System.out.println("Typer visitLocalVarDef stmt.name is "+stmt.name);
         if (stmt.symbol.type.eq(BuiltInType.WAIT)){
             assert(!stmt.initVal.isEmpty());//var类型等号后面不能为空
             var initVal = stmt.initVal.get();
@@ -568,7 +573,8 @@ public class Typer extends Phase<Tree.TopLevel, Tree.TopLevel> implements TypeLi
             var lt = stmt.symbol.type;
             var rt = initVal.type;
 
-            if (lt.noError() && (lt.isFuncType() || !rt.subtypeOf(lt))) {
+            if (lt.noError() && !rt.subtypeOf(lt)) {
+                System.out.println("IncompatBinOpError");
                 issue(new IncompatBinOpError(stmt.assignPos, lt.toString(), "=", rt.toString()));
             }
         }

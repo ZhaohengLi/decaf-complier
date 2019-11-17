@@ -196,9 +196,7 @@ public class Namer extends Phase<Tree.TopLevel, Tree.TopLevel> implements TypeLi
     @Override
     public void visitVarDef(Tree.VarDef varDef, ScopeStack ctx) {
         System.out.println("visitVarDef " + varDef.name);
-        System.out.println("check 1");
         varDef.typeLit.accept(this, ctx);
-        System.out.println("check 2");
         var earlier = ctx.findConflict(varDef.name);
         if (earlier.isPresent()) {
             if (earlier.get().isVarSymbol() && earlier.get().domain() != ctx.currentScope()) {
