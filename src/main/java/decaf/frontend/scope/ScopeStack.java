@@ -67,7 +67,8 @@ public class ScopeStack {
     }
 
     public LambdaSymbol currentLambda() {
-        return currLambda;
+        if (lambdaStack.isEmpty()) return null;
+        return lambdaStack.peek();
     }
 
     /**
@@ -91,7 +92,7 @@ public class ScopeStack {
             currMethod = formalScope.getOwner();
         } else if (scope.isLambdaFormalScope()) {
             var lambdaFormalScope = (LambdaFormalScope) scope;
-            currLambda = lambdaFormalScope.getOwner();
+            lambdaStack.push(lambdaFormalScope.getOwner());
         }
         scopeStack.push(scope);
     }
@@ -112,7 +113,7 @@ public class ScopeStack {
             }
             currClass = null;
         } else if (scope.isLambdaFormalScope()) {
-            currLambda = null;
+            lambdaStack.pop();
         } else if (scope.isFormalScope()) {
             currMethod = null;
         }
@@ -201,9 +202,9 @@ public class ScopeStack {
     }
 
     private Stack<Scope> scopeStack = new Stack<>();
+    private Stack<LambdaSymbol> lambdaStack = new Stack<>();
     private ClassSymbol currClass;
     private MethodSymbol currMethod;
-    private LambdaSymbol currLambda;
 
     private Optional<Symbol> findWhile(String key, Predicate<Scope> cond, Predicate<Symbol> validator) {
         ListIterator<Scope> iter = scopeStack.listIterator(scopeStack.size());

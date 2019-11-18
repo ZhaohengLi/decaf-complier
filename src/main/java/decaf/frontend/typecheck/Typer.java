@@ -96,7 +96,21 @@ public class Typer extends Phase<Tree.TopLevel, Tree.TopLevel> implements TypeLi
         var lt = stmt.lhs.type;
         var rt = stmt.rhs.type;
 
-        if (lt.noError() && (lt.isFuncType() || !rt.subtypeOf(lt))) {
+        var currLambda = ctx.currentLambda();
+        boolean isInLambda = (currLambda != null);
+        boolean isVarSel = (stmt.lhs instanceof Tree.VarSel);
+
+        if (lt.noError() && isInLambda && isVarSel) {
+            boolean isInLambdaFormalScope = currLambda.formalScope.containsKey(((Tree.VarSel)(stmt.lhs)).symbol.name);
+            boolean isInLambdaLocalScope = currLambda.formalScope.nestedLocalScope().containsKey(((Tree.VarSel)(stmt.lhs)).symbol.name);
+            boolean isInClassScope = ((Tree.VarSel)(stmt.lhs)).symbol.domain().isClassScope();
+            if (!isInLambdaFormalScope && !isInLambdaLocalScope && !isInClassScope) {
+                issue(new MyLambdaError1(stmt.pos));
+                System.out.println("*** MyLambdaError1");
+            }
+        }
+
+        if (lt.noError() && !rt.subtypeOf(lt)) {
             issue(new IncompatBinOpError(stmt.pos, lt.toString(), "=", rt.toString()));
             System.out.println("IncompatBinOpError");
         }
@@ -356,15 +370,21 @@ public class Typer extends Phase<Tree.TopLevel, Tree.TopLevel> implements TypeLi
     public void visitVarSel(Tree.VarSel expr, ScopeStack ctx) {
         System.out.println("Typer visitVarSel "+expr.name);
         if (expr.receiver.isEmpty()) {
+            System.out.println("Typer visitVarSel - has no receiver");
             // Variable, which should be complicated since a legal variable could refer to a local var,
             // a visible member var, and a class name.
             var symbol = ctx.lookupBefore(expr.name, localVarDefPos.orElse(expr.pos));
             if (symbol.isPresent()) {
+                System.out.println("Typer visitVarSel - symbol.isPresent()");
                 if (symbol.get().isVarSymbol()) {
+                    System.out.println("Typer visitVarSel - isVarSymbol()");
                     var var = (VarSymbol) symbol.get();
                     expr.symbol = var;
                     expr.type = var.type;
+                    System.out.println("Typer visitVarSel - expr.symbol is "+expr.symbol);
+                    System.out.println("Typer visitVarSel - expr.type is "+expr.type);
                     if (var.isMemberVar()) {
+                        System.out.println("Typer visitVarSel - var.isMemberVar()");
                         if (ctx.currentMethod().isStatic()) {
                             issue(new RefNonStaticError(expr.pos, ctx.currentMethod().name, expr.name));
                         } else {
@@ -375,19 +395,21 @@ public class Typer extends Phase<Tree.TopLevel, Tree.TopLevel> implements TypeLi
                 }
 
                 if (symbol.get().isClassSymbol() && allowClassNameVar) { // special case: a class name
+                    System.out.println("Typer visitVarSel - isClassSymbol()");
                     var clazz = (ClassSymbol) symbol.get();
                     expr.type = clazz.type;
                     expr.isClassName = true;
                     return;
                 }
             }
-
+            System.out.println("Typer visitVarSel - !symbol.isPresent()");
             expr.type = BuiltInType.ERROR;
             issue(new UndeclVarError(expr.pos, expr.name));
             return;
         }
 
         // has receiver
+        System.out.println("Typer visitVarSel - has receiver");
         var receiver = expr.receiver.get();
         allowClassNameVar = true;
         receiver.accept(this, ctx);
