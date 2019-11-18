@@ -1,8 +1,6 @@
 package decaf.frontend.scope;
 
-import decaf.frontend.symbol.ClassSymbol;
-import decaf.frontend.symbol.MethodSymbol;
-import decaf.frontend.symbol.Symbol;
+import decaf.frontend.symbol.*;
 import decaf.frontend.tree.Pos;
 
 import java.util.ListIterator;
@@ -70,6 +68,10 @@ public class ScopeStack {
         return currMethod;
     }
 
+    public LambdaSymbol currentLambda() {
+        return currLambda;
+    }
+
     /**
      * Open a scope.
      * <p>
@@ -82,13 +84,16 @@ public class ScopeStack {
     public void open(Scope scope) {
         assert !scope.isGlobalScope();
         if (scope.isClassScope()) {
-            assert !currentScope().isFormalOrLocalScope();
+            assert !currentScope().isFormalOrLocalOrLambdaScope();
             var classScope = (ClassScope) scope;
             classScope.parentScope.ifPresent(this::open);
             currClass = classScope.getOwner();
         } else if (scope.isFormalScope()) {
             var formalScope = (FormalScope) scope;
             currMethod = formalScope.getOwner();
+        } else if (scope.isLambdaFormalScope()) {
+            var lambdaFormalScope = (LambdaFormalScope) scope;
+            currLambda = lambdaFormalScope.getOwner();
         }
         scopeStack.push(scope);
     }
@@ -107,7 +112,13 @@ public class ScopeStack {
             while (!scopeStack.isEmpty()) {
                 scopeStack.pop();
             }
+            currClass = null;
+        } else if (scope.isLambdaFormalScope()) {
+            currLambda = null;
+        } else if (scope.isFormalScope()) {
+            currMethod = null;
         }
+
     }
 
     /**
@@ -194,6 +205,7 @@ public class ScopeStack {
     private Stack<Scope> scopeStack = new Stack<>();
     private ClassSymbol currClass;
     private MethodSymbol currMethod;
+    private LambdaSymbol currLambda;
 
     private Optional<Symbol> findWhile(String key, Predicate<Scope> cond, Predicate<Symbol> validator) {
         ListIterator<Scope> iter = scopeStack.listIterator(scopeStack.size());

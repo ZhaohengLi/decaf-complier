@@ -5,6 +5,7 @@ import decaf.frontend.scope.LocalScope;
 import decaf.frontend.symbol.ClassSymbol;
 import decaf.frontend.symbol.MethodSymbol;
 import decaf.frontend.symbol.VarSymbol;
+import decaf.frontend.symbol.LambdaSymbol;
 import decaf.frontend.type.FunType;
 import decaf.frontend.type.Type;
 import decaf.lowlevel.instr.Temp;
@@ -928,6 +929,7 @@ public abstract class Tree {
         public List<LocalVarDef> params;
         public Expr expr;
         public Block body;
+        public LambdaSymbol symbol;
 
         public Lambda(List<LocalVarDef> params, Block body, Pos pos) {
             super(Kind.LAMBDA, "Lambda", pos);

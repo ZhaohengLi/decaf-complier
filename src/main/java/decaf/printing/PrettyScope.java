@@ -62,6 +62,17 @@ public final class PrettyScope extends PrettyPrinter<Scope> {
             else scope.forEach(printer::println);
             localScope.nestedLocalScopes().forEach(this::pretty);
             printer.decIndent();
+        } else if (scope.isLambdaFormalScope()) {
+            var lambdaFormalScope = (LambdaFormalScope) scope;
+            printer.formatLn("FORMAL SCOPE OF '%s':" ,lambdaFormalScope.getOwner().name);
+            printer.incIndent();
+            if (scope.isEmpty()){
+                printer.println("<empty>");
+                System.out.println("<empty>");
+            }
+            else scope.forEach(printer::println);
+            pretty(lambdaFormalScope.nestedLocalScope());
+            printer.decIndent();
         }
     }
 }
