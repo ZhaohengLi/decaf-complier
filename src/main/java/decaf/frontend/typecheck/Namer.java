@@ -393,6 +393,10 @@ public class Namer extends Phase<Tree.TopLevel, Tree.TopLevel> implements TypeLi
                 var symbol = new VarSymbol(def.name, def.typeLit.type, def.id.pos);
                 ctx.declare(symbol);
                 def.symbol = symbol;
+                if (!def.initVal.isEmpty()) {
+                    var initVal = def.initVal.get();
+                    initVal.accept(this, ctx);
+                }
             }
         }
     }

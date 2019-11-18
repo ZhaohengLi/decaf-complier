@@ -168,6 +168,8 @@ public interface Visitor<C> {
 
     /* The default handler */
     default void visitOthers(TreeNode that, C ctx) {
+        System.out.println("visitOthers");
+
         // do nothing
     }
 }

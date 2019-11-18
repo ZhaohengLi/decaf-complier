@@ -54,7 +54,6 @@ public class ScopeStack {
      * @return class symbol
      */
     public ClassSymbol currentClass() {
-        Objects.requireNonNull(currClass);
         return currClass;
     }
 
@@ -64,7 +63,6 @@ public class ScopeStack {
      * @return method symbol
      */
     public MethodSymbol currentMethod() {
-        Objects.requireNonNull(currMethod);
         return currMethod;
     }
 
