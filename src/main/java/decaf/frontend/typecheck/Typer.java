@@ -106,13 +106,13 @@ public class Typer extends Phase<Tree.TopLevel, Tree.TopLevel> implements TypeLi
             boolean isInClassScope = ((Tree.VarSel)(stmt.lhs)).symbol.domain().isClassScope();
             if (!isInLambdaFormalScope && !isInLambdaLocalScope && !isInClassScope) {
                 issue(new MyLambdaError1(stmt.pos));
-                System.out.println("*** MyLambdaError1");
+                System.out.println("Typer visitAssign - MyLambdaError1 " + stmt.pos);
             }
         }
 
         if (lt.noError() && !rt.subtypeOf(lt)) {
             issue(new IncompatBinOpError(stmt.pos, lt.toString(), "=", rt.toString()));
-            System.out.println("IncompatBinOpError");
+            System.out.println("Typer visitAssign - IncompatBinOpError " + stmt.pos);
         }
     }
 
@@ -380,6 +380,12 @@ public class Typer extends Phase<Tree.TopLevel, Tree.TopLevel> implements TypeLi
                     System.out.println("Typer visitVarSel - isVarSymbol()");
                     var var = (VarSymbol) symbol.get();
                     expr.symbol = var;
+                    if (var.type.eq(BuiltInType.WAIT)) {
+                        issue(new UndeclVarError(expr.pos, expr.name));
+                        System.out.println("Typer visitVarSel - UndeclVarError " + expr.pos);
+                        expr.type = BuiltInType.ERROR;
+                        return;
+                    }
                     expr.type = var.type;
                     System.out.println("Typer visitVarSel - expr.symbol is "+expr.symbol);
                     System.out.println("Typer visitVarSel - expr.type is "+expr.type);
