@@ -418,6 +418,14 @@ public class Namer extends Phase<Tree.TopLevel, Tree.TopLevel> implements TypeLi
     }
 
     @Override
+    public void visitReturn(Tree.Return ret, ScopeStack ctx) {
+        System.out.println("Namer visitReturn");
+        if (ret.expr.isPresent() && ret.expr.get() instanceof Tree.Lambda){
+            ((Tree.Lambda)(ret.expr.get())).accept(this, ctx);
+        }
+    }
+
+    @Override
     public void visitFor(Tree.For loop, ScopeStack ctx) {
         System.out.println("Namer visitFor");
 

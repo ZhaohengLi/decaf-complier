@@ -469,6 +469,8 @@ public abstract class Tree {
          */
         public boolean returns = false;
 
+        public boolean isClosed = false;
+
         public boolean isBlock() {
             return false;
         }

@@ -11,7 +11,7 @@ import decaf.frontend.type.*;
 import decaf.lowlevel.log.IndentPrinter;
 import decaf.printing.PrettyScope;
 
-import java.util.Optional;
+import java.util.*;
 
 /**
  * The typer phase: type check abstract syntax tree and annotate nodes with inferred (and checked) types.
@@ -83,6 +83,7 @@ public class Typer extends Phase<Tree.TopLevel, Tree.TopLevel> implements TypeLi
         ctx.open(block.scope);
         for (var stmt : block.stmts) {
             stmt.accept(this, ctx);
+            if (stmt.isClosed) block.isClosed = true;
         }
         ctx.close();
         block.returns = !block.stmts.isEmpty() && block.stmts.get(block.stmts.size() - 1).returns;
@@ -96,24 +97,30 @@ public class Typer extends Phase<Tree.TopLevel, Tree.TopLevel> implements TypeLi
         var lt = stmt.lhs.type;
         var rt = stmt.rhs.type;
 
-        var currLambda = ctx.currentLambda();
-        boolean isInLambda = (currLambda != null);
-        boolean isVarSel = (stmt.lhs instanceof Tree.VarSel);
-
-        if (lt.noError() && isInLambda && isVarSel) {
-            boolean isInLambdaFormalScope = currLambda.formalScope.containsKey(((Tree.VarSel)(stmt.lhs)).symbol.name);
-            boolean isInLambdaLocalScope = currLambda.formalScope.nestedLocalScope().containsKey(((Tree.VarSel)(stmt.lhs)).symbol.name);
-            boolean isInClassScope = ((Tree.VarSel)(stmt.lhs)).symbol.domain().isClassScope();
-            if (!isInLambdaFormalScope && !isInLambdaLocalScope && !isInClassScope) {
-                issue(new MyLambdaError1(stmt.pos));
-                System.out.println("Typer visitAssign - MyLambdaError1 " + stmt.pos);
-            }
+        if (!suitableForLambdaAssign(stmt.lhs, ctx)) {
+            issue(new MyLambdaError1(stmt.pos));
+            System.out.println("Typer visitAssign - MyLambdaError1 " + stmt.pos);
         }
 
         if (lt.noError() && !rt.subtypeOf(lt)) {
             issue(new IncompatBinOpError(stmt.pos, lt.toString(), "=", rt.toString()));
             System.out.println("Typer visitAssign - IncompatBinOpError " + stmt.pos);
         }
+    }
+
+    private boolean suitableForLambdaAssign(Tree.LValue lValue, ScopeStack ctx) {
+        boolean suitable = true;
+
+        boolean isAssignedInLambda = ctx.currentLambda() != null;
+        boolean isVarSel = lValue instanceof Tree.VarSel;
+
+        if (lValue.type.noError() && isAssignedInLambda && isVarSel) {
+            boolean isInCurrentLambdaFormalScope = ctx.containsInCurrentLambdaFormalScope(((Tree.VarSel)lValue).symbol.name);
+            boolean isInClassScope = ((Tree.VarSel)lValue).symbol.domain().isClassScope();
+            if (!isInCurrentLambdaFormalScope && ! isInClassScope) suitable = false;
+        }
+
+        return suitable;
     }
 
     @Override
@@ -131,6 +138,7 @@ public class Typer extends Phase<Tree.TopLevel, Tree.TopLevel> implements TypeLi
         stmt.falseBranch.ifPresent(b -> b.accept(this, ctx));
         // if-stmt returns a value iff both branches return
         stmt.returns = stmt.trueBranch.returns && stmt.falseBranch.isPresent() && stmt.falseBranch.get().returns;
+        stmt.isClosed = stmt.trueBranch.isClosed && stmt.falseBranch.isPresent() && stmt.falseBranch.get().isClosed;
     }
 
     @Override
@@ -173,18 +181,17 @@ public class Typer extends Phase<Tree.TopLevel, Tree.TopLevel> implements TypeLi
             stmt.expr.ifPresent(e -> e.accept(this, ctx));
             var actual = stmt.expr.map(e -> e.type).orElse(BuiltInType.VOID);
             if (actual.noError() && !actual.subtypeOf(expected)) {
-                System.out.println("BadReturnTypeError");
+                System.out.println("Typer visitReturn - BadReturnTypeError");
                 issue(new BadReturnTypeError(stmt.pos, expected.toString(), actual.toString()));
             }
-            stmt.returns = stmt.expr.isPresent();
+            stmt.returns = stmt.expr.isPresent();// boolean 标志位
         } else {
-            System.out.println("Typer visitReturn lambda return");
+            System.out.println("Typer visitReturn - lambda");
             stmt.expr.ifPresent(e -> e.accept(this, ctx));
             var actual = stmt.expr.map(e -> e.type).orElse(BuiltInType.VOID);
-            ctx.currentLambda().type.returnType = actual;
-            System.out.println("Typer "+ctx.currentLambda().name +" returnType now is "+ actual);
-
-            stmt.returns = stmt.expr.isPresent();
+            stmt.isClosed = true;
+            ctx.currentLambdaReturnTypeList().add(actual);
+            stmt.returns = stmt.expr.isPresent();// boolean 标志位
         }
 
     }
@@ -651,12 +658,161 @@ public class Typer extends Phase<Tree.TopLevel, Tree.TopLevel> implements TypeLi
             lambda.symbol.type.returnType = lambda.expr.type;
         } else if (lambda.body != null) {
             ctx.open(lambda.symbol.formalScope);
-            lambda.body.accept(this, ctx);//如果有return语句 则已经处理好返回值类型
+            lambda.body.accept(this, ctx);
+            lambda.symbol.type.returnType = getLambdaBlockReturnType(lambda, ctx);//不能在close lambdaformalscope后做
+            System.out.println("Typer visitLambda - lambdaReturnType is" + lambda.symbol.type.returnType);
             ctx.close();
-            if (!lambda.body.returns) lambda.symbol.type.returnType = BuiltInType.VOID;
         } else {
             //error
         }
+    }
+
+    private Type getLambdaBlockReturnType(Tree.Lambda lambda, ScopeStack ctx) {
+        System.out.println("Typer getLambdaBlockReturnType");
+        if (ctx.currentLambdaReturnTypeList().isEmpty()) { //内部没有返回值
+            System.out.println("Typer getLambdaBlockReturnType - 内部没有返回值");
+            return BuiltInType.VOID;
+        } else { //内部有返回值
+            System.out.println("Typer getLambdaBlockReturnType - 内部有返回值");
+
+            if (!lambda.body.isClosed) {
+                System.out.println("Typer getLambdaBlockReturnType - !lambda.body.isClosed");
+
+                for (var type : ctx.currentLambdaReturnTypeList()) {
+                    if (!type.eq(BuiltInType.VOID)) {
+                        issue(new MissingReturnError(lambda.body.pos));
+                        break;
+                    }
+                }
+            }
+
+            Type type = getUpperBound(ctx.currentLambdaReturnTypeList());
+            System.out.println("Typer getLambdaBlockReturnType - getUpperBound is " + type);
+
+            if (type.eq(BuiltInType.ERROR)) {
+                System.out.println("Typer getLambdaBlockReturnType - MyLambdaError2");
+                issue(new MyLambdaError2(lambda.body.pos));
+            }
+            return type;
+        }
+    }
+
+    private Type getUpperBound(List<Type> typeList) {
+        System.out.println("Typer getUpperBound of " + typeList);
+
+        Type selected = BuiltInType.NULL;
+        for (Type type : typeList) if (!type.eq(BuiltInType.NULL)) { selected = type; break; } //选择一个非null类型
+        if (selected.eq(BuiltInType.NULL)) return BuiltInType.NULL; //如果全是 BuiltInType.NULL 则返回 BuiltInType.NULL
+
+        if (selected.isBaseType() || selected.isVoidType() || selected.isArrayType()) {
+            System.out.println("Typer getUpperBound - 基本类型");
+            for (Type type : typeList) if (!type.eq(selected)) return BuiltInType.ERROR;
+            return selected;
+        } else if (selected.isClassType()) { //处理classtype
+            System.out.println("Typer getUpperBound - class类型");
+            for (Type type : typeList) {
+                if (type.eq(BuiltInType.NULL)) continue; //遇到 null 跳过
+                if (!type.isClassType()) return BuiltInType.ERROR; // 遇到不是 classtype 报错
+            }
+            while (true) {
+                boolean satisfied = true;
+                for (Type type : typeList){
+                    if (type.eq(BuiltInType.NULL)) continue;
+                    if (!type.subtypeOf(selected)) { satisfied = false; break; }
+                }
+                if (satisfied){ //所有的type都是selected的子类
+                    return selected;
+                } else {
+                    if (((ClassType)selected).superType.isPresent()) selected = ((ClassType)selected).superType.get();
+                    else return BuiltInType.ERROR;
+                }
+            }
+        } else if (selected.isFuncType()) { //处理 FunType
+            System.out.println("Typer getUpperBound - 函数类型");
+            List<Type> r = new ArrayList<>();
+            List<List<Type>> t = new ArrayList<>();
+            int argCount = ((FunType)selected).arity();//参数个数
+            System.out.println("Typer getUpperBound - 函数类型 argCount is " + argCount);
+            for (int i=0; i<argCount; i++) t.add(new ArrayList<Type>());
+            for (Type type : typeList) {
+                if (type.eq(BuiltInType.NULL)) continue;
+                if (!type.isFuncType()) return BuiltInType.ERROR;
+                if (argCount != ((FunType)type).arity()) return BuiltInType.ERROR;
+
+                r.add(((FunType)type).returnType);
+                for (int i=0; i<argCount; i++) t.get(i).add(((FunType)type).argTypes.get(i));
+            }
+
+            Type R = getUpperBound(r);
+            if (R.eq(BuiltInType.ERROR)) return BuiltInType.ERROR;
+
+            List<Type> T = new ArrayList<>();
+
+            for (int i=0; i<argCount; i++) {
+                Type lowerBound = getLowerBound(t.get(i));
+                System.out.println("Typer getUpperBound - 函数类型 从 lowerBound 中返回 " + lowerBound);
+                if (lowerBound.eq(BuiltInType.ERROR)) return BuiltInType.ERROR;
+                T.add(lowerBound);
+            }
+            return new FunType(R, T);
+        }
+        return BuiltInType.ERROR;
+    }
+
+    private Type getLowerBound(List<Type> typeList) {
+        System.out.println("Typer getLowerBound of " + typeList);
+
+        Type selected = BuiltInType.NULL;
+        for (Type type : typeList) if (!type.eq(BuiltInType.NULL)) { selected = type; break; } //选择一个非null类型
+        if (selected.eq(BuiltInType.NULL)) return BuiltInType.NULL; //如果全是 BuiltInType.NULL 则返回 BuiltInType.NULL
+
+        if (selected.isBaseType() || selected.isVoidType() || selected.isArrayType()) {
+            System.out.println("Typer getLowerBound - 基本类型");
+            for (Type type : typeList) if (!type.eq(selected)) return BuiltInType.ERROR;
+            return selected;
+        } else if (selected.isClassType()) { //处理classtype
+            System.out.println("Typer getLowerBound - class类型");
+            for (Type type : typeList) {
+                if (type.eq(BuiltInType.NULL)) continue; //遇到 null 跳过
+                if (!type.isClassType()) {
+                    System.out.println("Typer getLowerBound - class类型 - !type.isClassType " + type);
+                    return BuiltInType.ERROR;
+                }// 遇到不是 classtype 报错
+                if (selected.subtypeOf(type)) continue;
+                if (type.subtypeOf(selected)) { selected = type; continue; }
+                if (!type.subtypeOf(selected) && !selected.subtypeOf(type)) {
+                    System.out.println("Typer getLowerBound - class类型 - 互不是父子 " + type);
+                    return BuiltInType.ERROR;
+                }
+            }
+            return selected;
+        } else if (selected.isFuncType()) { //处理 FunType
+            System.out.println("Typer getLowerBound - 函数类型");
+            List<Type> r = new ArrayList<>();
+            List<List<Type>> t = new ArrayList<>();
+            int argCount = ((FunType)selected).arity();//参数个数
+            for (int i=0; i<argCount; i++) t.add(new ArrayList<Type>());
+            for (Type type : typeList) {
+                if (type.eq(BuiltInType.NULL)) continue;
+                if (!type.isFuncType()) return BuiltInType.ERROR;
+                if (argCount != ((FunType)type).arity()) return BuiltInType.ERROR;
+
+                r.add(((FunType)type).returnType);
+                for (int i=0; i<argCount; i++) t.get(i).add(((FunType)type).argTypes.get(i));
+            }
+
+            Type R = getLowerBound(r);
+            if (R.eq(BuiltInType.ERROR)) return BuiltInType.ERROR;
+
+            List<Type> T = new ArrayList<>();
+            for (List<Type> arg : t) {
+                Type lowerBound = getUpperBound(arg);
+                if (lowerBound.eq(BuiltInType.ERROR)) return BuiltInType.ERROR;
+                T.add(lowerBound);
+            }
+            return new FunType(R, T);
+        }
+        return BuiltInType.ERROR;
     }
 
     // Only usage: check if an initializer cyclically refers to the declared variable, e.g. var x = x + 1

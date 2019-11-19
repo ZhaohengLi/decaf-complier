@@ -2,11 +2,9 @@ package decaf.frontend.scope;
 
 import decaf.frontend.symbol.*;
 import decaf.frontend.tree.Pos;
+import decaf.frontend.type.*;
 
-import java.util.ListIterator;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Stack;
+import java.util.*;
 import java.util.function.Predicate;
 
 /**
@@ -29,6 +27,11 @@ import java.util.function.Predicate;
  */
 public class ScopeStack {
 
+    private Stack<Scope> scopeStack = new Stack<>();
+    private Stack<LambdaSymbol> lambdaStack = new Stack<>();
+    private Stack<List<Type>> lambdaReturnTypeListStack = new Stack<>();
+    private ClassSymbol currClass;
+    private MethodSymbol currMethod;
     /**
      * The global scope.
      */
@@ -71,6 +74,11 @@ public class ScopeStack {
         return lambdaStack.peek();
     }
 
+    public List<Type> currentLambdaReturnTypeList() {
+        if (lambdaReturnTypeListStack.isEmpty()) return null;
+        return lambdaReturnTypeListStack.peek();
+    }
+
     /**
      * Open a scope.
      * <p>
@@ -93,6 +101,7 @@ public class ScopeStack {
         } else if (scope.isLambdaFormalScope()) {
             var lambdaFormalScope = (LambdaFormalScope) scope;
             lambdaStack.push(lambdaFormalScope.getOwner());
+            lambdaReturnTypeListStack.push(new ArrayList<Type>());
         }
         scopeStack.push(scope);
     }
@@ -114,6 +123,7 @@ public class ScopeStack {
             currClass = null;
         } else if (scope.isLambdaFormalScope()) {
             lambdaStack.pop();
+            lambdaReturnTypeListStack.pop();
         } else if (scope.isFormalScope()) {
             currMethod = null;
         }
@@ -171,6 +181,22 @@ public class ScopeStack {
         return global.containsKey(key);
     }
 
+    public boolean containsInCurrentLambdaFormalScope(String key) {
+        assert(currentScope().isLocalScope());
+        boolean contains = false;
+        ListIterator<Scope> iter = scopeStack.listIterator(scopeStack.size());
+        while (iter.hasPrevious()) {
+            var scope = iter.previous();
+            if (scope.isLambdaFormalScope()) {
+                if (scope.find(key).isPresent()) contains = true;
+                break;
+            } else {
+                if (scope.find(key).isPresent()) { contains = true; break; }
+            }
+        }
+        return contains;
+    }
+
     /**
      * Lookup a class in the global scope.
      *
@@ -200,11 +226,6 @@ public class ScopeStack {
     public void declare(Symbol symbol) {
         currentScope().declare(symbol);
     }
-
-    private Stack<Scope> scopeStack = new Stack<>();
-    private Stack<LambdaSymbol> lambdaStack = new Stack<>();
-    private ClassSymbol currClass;
-    private MethodSymbol currMethod;
 
     private Optional<Symbol> findWhile(String key, Predicate<Scope> cond, Predicate<Symbol> validator) {
         ListIterator<Scope> iter = scopeStack.listIterator(scopeStack.size());
