@@ -303,11 +303,9 @@ public class Namer extends Phase<Tree.TopLevel, Tree.TopLevel> implements TypeLi
         ctx.close();
     }
 
-
     @Override
     public void visitLambda(Tree.Lambda lambda, ScopeStack ctx){
         System.out.println("Namer visitLambda lambda@"+lambda.pos);
-
         if (lambda.expr != null) {
             var formalScope = new LambdaFormalScope(ctx.currentScope());
             typeLambda(lambda, ctx, formalScope);
@@ -330,8 +328,6 @@ public class Namer extends Phase<Tree.TopLevel, Tree.TopLevel> implements TypeLi
             ctx.open(formalScope);
             lambda.body.accept(this, ctx);
             ctx.close();
-        } else {
-            //error
         }
     }
 
@@ -416,13 +412,52 @@ public class Namer extends Phase<Tree.TopLevel, Tree.TopLevel> implements TypeLi
             }
         }
     }
+    @Override
+    public void visitCall(Tree.Call expr, ScopeStack ctx){
+        System.out.println("Namer visitCall " + expr.pos);
+        expr.receiver.get().accept(this, ctx);
+        for (Tree.Expr arg : expr.args) {
+            arg.accept(this, ctx);
+        }
+    }
+
+    @Override
+    public void visitBinary(Tree.Binary expr, ScopeStack ctx) {
+        System.out.println("Namer visitBinary");
+        expr.lhs.accept(this, ctx);
+        expr.rhs.accept(this, ctx);
+    }
 
     @Override
     public void visitReturn(Tree.Return ret, ScopeStack ctx) {
         System.out.println("Namer visitReturn");
-        if (ret.expr.isPresent() && ret.expr.get() instanceof Tree.Lambda){
-            ((Tree.Lambda)(ret.expr.get())).accept(this, ctx);
-        }
+        if (ret.expr.isPresent()) ret.expr.get().accept(this, ctx);
+    }
+
+    @Override
+    public void visitNewArray(Tree.NewArray expr, ScopeStack ctx) {
+        System.out.println("Namer visitNewArray");
+        expr.length.accept(this, ctx);
+    }
+
+    @Override
+    public void visitAssign(Tree.Assign expr, ScopeStack ctx) {
+        System.out.println("Namer visitAssign");
+        expr.lhs.accept(this, ctx);
+        expr.rhs.accept(this, ctx);
+    }
+
+    // @Override
+    // public void visitVarSel(Tree.VarSel expr, ScopeStack ctx) {
+    //     System.out.println("Namer visitVarSel");
+    //     expr.receiver.get().accept(this, ctx);
+    // }
+
+    @Override
+    public void visitIndexSel(Tree.IndexSel expr, ScopeStack ctx) {
+        System.out.println("Namer visitIndexSel");
+        expr.array.accept(this, ctx);
+        expr.index.accept(this, ctx);
     }
 
     @Override
@@ -441,9 +476,7 @@ public class Namer extends Phase<Tree.TopLevel, Tree.TopLevel> implements TypeLi
     @Override
     public void visitExprEval(Tree.ExprEval exprEval, ScopeStack ctx) {
         System.out.println("Namer visitExprEval" + exprEval.pos);
-        if (exprEval.expr instanceof Tree.Lambda) {
-            ((Tree.Lambda) exprEval.expr).accept(this, ctx);
-        }
+        exprEval.expr.accept(this, ctx);
     }
 
     @Override

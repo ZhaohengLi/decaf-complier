@@ -2,10 +2,7 @@ package decaf.frontend.tree;
 
 import decaf.frontend.scope.GlobalScope;
 import decaf.frontend.scope.LocalScope;
-import decaf.frontend.symbol.ClassSymbol;
-import decaf.frontend.symbol.MethodSymbol;
-import decaf.frontend.symbol.VarSymbol;
-import decaf.frontend.symbol.LambdaSymbol;
+import decaf.frontend.symbol.*;
 import decaf.frontend.type.FunType;
 import decaf.frontend.type.Type;
 import decaf.lowlevel.instr.Temp;
@@ -1109,6 +1106,10 @@ public abstract class Tree {
         // For type check
         public VarSymbol symbol;
         public boolean isClassName = false;
+
+        public MethodSymbol MethodSymbol;
+        public boolean isMethod = false;
+        public boolean isArrayLength = false;
 
         public VarSel(Optional<Expr> receiver, Id variable, Pos pos) {
             super(Kind.VAR_SEL, "VarSel", pos);
