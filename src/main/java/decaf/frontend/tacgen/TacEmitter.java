@@ -236,16 +236,6 @@ public interface TacEmitter extends Visitor<FuncVisitor> {
         expr.val = mv.visitBinary(op, expr.lhs.val, expr.rhs.val);
     }
 
-    @Override
-    default void visitVarSel(Tree.VarSel expr, FuncVisitor mv) {
-        if (expr.symbol.isMemberVar()) {
-            var object = expr.receiver.get();
-            object.accept(this, mv);
-            expr.val = mv.visitMemberAccess(object.val, expr.symbol.getOwner().name, expr.name);
-        } else { // local or param
-            expr.val = expr.symbol.temp;
-        }
-    }
 
     @Override
     default void visitIndexSel(Tree.IndexSel expr, FuncVisitor mv) {
@@ -269,6 +259,17 @@ public interface TacEmitter extends Visitor<FuncVisitor> {
     @Override
     default void visitThis(Tree.This expr, FuncVisitor mv) {
         expr.val = mv.getArgTemp(0);
+    }
+
+    @Override
+    default void visitVarSel(Tree.VarSel expr, FuncVisitor mv) {
+        if (expr.symbol.isMemberVar()) {
+            var object = expr.receiver.get();
+            object.accept(this, mv);
+            expr.val = mv.visitMemberAccess(object.val, expr.symbol.getOwner().name, expr.name);
+        } else { // local or param
+            expr.val = expr.symbol.temp;
+        }
     }
 
     @Override

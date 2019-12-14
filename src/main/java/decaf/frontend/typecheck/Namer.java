@@ -30,7 +30,7 @@ public class Namer extends Phase<Tree.TopLevel, Tree.TopLevel> implements TypeLi
 
     @Override
     public void visitTopLevel(Tree.TopLevel program, ScopeStack ctx) {
-        System.out.println("Namer visitTopLevel");
+        //System.out.println("Namer visitTopLevel");
         var classes = new TreeMap<String, Tree.ClassDef>();
 
         // Check conflicting definitions. If any, ignore the redefined ones.
@@ -155,14 +155,14 @@ public class Namer extends Phase<Tree.TopLevel, Tree.TopLevel> implements TypeLi
             var type = new ClassType(clazz.name, base.type);
             var scope = new ClassScope(base.scope);
             var symbol = new ClassSymbol(clazz.name, base, type, scope, clazz.pos, clazz.modifiers);
-            System.out.println("Namer Created class symbol "+clazz.name + " with parent " + clazz.parent.get().name);
+            //System.out.println("Namer Created class symbol "+clazz.name + " with parent " + clazz.parent.get().name);
             global.declare(symbol);
             clazz.symbol = symbol;
         } else {
             var type = new ClassType(clazz.name);
             var scope = new ClassScope();
             var symbol = new ClassSymbol(clazz.name, type, scope, clazz.pos, clazz.modifiers);
-            System.out.println("Namer Created class symbol "+clazz.name + " with no parent");
+            //System.out.println("Namer Created class symbol "+clazz.name + " with no parent");
             global.declare(symbol);
             clazz.symbol = symbol;
         }
@@ -170,7 +170,7 @@ public class Namer extends Phase<Tree.TopLevel, Tree.TopLevel> implements TypeLi
 
     @Override
     public void visitClassDef(Tree.ClassDef clazz, ScopeStack ctx) {
-        System.out.println("Namer visitClassDef "+clazz.name);
+        //System.out.println("Namer visitClassDef "+clazz.name);
         if (clazz.resolved) return;
 
         if (clazz.hasParent()) {
@@ -188,7 +188,7 @@ public class Namer extends Phase<Tree.TopLevel, Tree.TopLevel> implements TypeLi
 
     @Override
     public void visitVarDef(Tree.VarDef varDef, ScopeStack ctx) {
-        System.out.println("Namer visitVarDef " + varDef.name);
+        //System.out.println("Namer visitVarDef " + varDef.name);
         varDef.typeLit.accept(this, ctx);
         var earlier = ctx.findConflict(varDef.name);
         if (earlier.isPresent()) {
@@ -214,14 +214,14 @@ public class Namer extends Phase<Tree.TopLevel, Tree.TopLevel> implements TypeLi
 
     @Override
     public void visitMethodDef(Tree.MethodDef method, ScopeStack ctx) {
-        System.out.println("Namer visitMethodDef "+method.name);
+        //System.out.println("Namer visitMethodDef "+method.name);
         var earlier = ctx.findConflict(method.name);
         if (earlier.isPresent()) {//命名有冲突
-            System.out.println("Namer visitMethodDef - 命名有冲突");
+            //System.out.println("Namer visitMethodDef - 命名有冲突");
             if (earlier.get().isMethodSymbol() && earlier.get().domain() != ctx.currentScope()) { //与另一个定义域内函数名冲突
                 var suspect = (MethodSymbol) earlier.get();
                 if (suspect.isAbstract() && method.isAbstract()) { //两个都是抽象函数
-                    System.out.println("Namer visitMethodDef - 两个都是抽象函数");
+                    //System.out.println("Namer visitMethodDef - 两个都是抽象函数");
                     var formal = new FormalScope();
                     typeMethod(method, ctx, formal);
                     if (method.type.subtypeOf(suspect.type)){ //类型正确
@@ -232,12 +232,12 @@ public class Namer extends Phase<Tree.TopLevel, Tree.TopLevel> implements TypeLi
                         issue(new BadOverrideError(method.pos, method.name, suspect.owner.name));
                     }
                 } else if (suspect.isAbstract() && !method.isAbstract() && !method.isStatic()) { //前一个抽象 后一个正常
-                    System.out.println("Namer visitMethodDef - 前一个抽象 后一个正常");
+                    //System.out.println("Namer visitMethodDef - 前一个抽象 后一个正常");
                     var formal = new FormalScope();
                     typeMethod(method, ctx, formal);
                     if (method.type.subtypeOf(suspect.type)) { // 类型正确
-                        System.out.println("Namer visitMethodDef - method.type is "+method.type);
-                        System.out.println("Namer visitMethodDef - suspect.type is "+suspect.type);
+                        //System.out.println("Namer visitMethodDef - method.type is "+method.type);
+                        //System.out.println("Namer visitMethodDef - suspect.type is "+suspect.type);
                         var symbol = new MethodSymbol(method.name, method.type, formal, method.pos, method.modifiers, ctx.currentClass());
                         ctx.declare(symbol);
                         method.symbol = symbol;
@@ -245,12 +245,12 @@ public class Namer extends Phase<Tree.TopLevel, Tree.TopLevel> implements TypeLi
                         method.body.accept(this, ctx);
                         ctx.close();
                         ctx.currentClass().abstractMethods.remove(method.name);
-                        System.out.println("Namer visitMethodDef - " + ctx.currentClass().name + " remove " + method.name + " . Now length is " + ctx.currentClass().abstractMethods.size());
+                        //System.out.println("Namer visitMethodDef - " + ctx.currentClass().name + " remove " + method.name + " . Now length is " + ctx.currentClass().abstractMethods.size());
                     } else { //类型不正确
                         issue(new BadOverrideError(method.pos, method.name, suspect.owner.name));
                     }
                 } else if (!suspect.isAbstract() && !suspect.isStatic() && !method.isAbstract() && !method.isStatic()){ //两个都是正常函数
-                    System.out.println("Namer visitMethodDef - 两个都是正常函数");
+                    //System.out.println("Namer visitMethodDef - 两个都是正常函数");
                     var formal = new FormalScope();
                     typeMethod(method, ctx, formal);
                     if (method.type.subtypeOf(suspect.type)) { // 类型正确
@@ -264,15 +264,15 @@ public class Namer extends Phase<Tree.TopLevel, Tree.TopLevel> implements TypeLi
                         issue(new BadOverrideError(method.pos, method.name, suspect.owner.name));
                     }
                 } else { //非以上列出的情况
-                    System.out.println("Namer visitMethodDef - 非列出情况");
+                    //System.out.println("Namer visitMethodDef - 非列出情况");
                     issue(new DeclConflictError(method.pos, method.name, suspect.pos));
                 }
             } else { //与此定义域的函数名或者是任何定义域非函数名冲突
-                System.out.println("Namer visitMethodDef - 与此定义域的函数名或者是任何定义域非函数名冲突");
+                //System.out.println("Namer visitMethodDef - 与此定义域的函数名或者是任何定义域非函数名冲突");
                 issue(new DeclConflictError(method.pos, method.name, earlier.get().pos));
             }
         } else { //命名无冲突 说明当前是新的函数
-            System.out.println("Namer visitMethodDef - 命名无冲突");
+            //System.out.println("Namer visitMethodDef - 命名无冲突");
             var formal = new FormalScope();//新建空白参数作用域
             typeMethod(method, ctx, formal);//参数作用域中建立this变量 构造好函数类型
             var symbol = new MethodSymbol(method.name, method.type, formal, method.pos, method.modifiers, ctx.currentClass());
@@ -280,7 +280,7 @@ public class Namer extends Phase<Tree.TopLevel, Tree.TopLevel> implements TypeLi
             method.symbol = symbol;
             if (method.isAbstract()) { //当前新函数为抽象函数
                 ctx.currentClass().abstractMethods.add(method.name);
-                System.out.println("Namer visitMethodDef - "+ctx.currentClass().name + " add " + method.name + " . Now length is " + ctx.currentClass().abstractMethods.size());
+                //System.out.println("Namer visitMethodDef - "+ctx.currentClass().name + " add " + method.name + " . Now length is " + ctx.currentClass().abstractMethods.size());
             } else { //当前新函数不是抽象函数
                 ctx.open(formal);
                 method.body.accept(this, ctx);
@@ -290,7 +290,7 @@ public class Namer extends Phase<Tree.TopLevel, Tree.TopLevel> implements TypeLi
     }
 
     private void typeMethod(Tree.MethodDef method, ScopeStack ctx, FormalScope formal) {
-        System.out.println("Namer typeMethod " + method.name);
+        //System.out.println("Namer typeMethod " + method.name);
         method.returnType.accept(this, ctx);
         ctx.open(formal);
         if (!method.isStatic()) ctx.declare(VarSymbol.thisVar(ctx.currentClass().type, method.id.pos));//新建this变量符号
@@ -305,7 +305,7 @@ public class Namer extends Phase<Tree.TopLevel, Tree.TopLevel> implements TypeLi
 
     @Override
     public void visitLambda(Tree.Lambda lambda, ScopeStack ctx){
-        System.out.println("Namer visitLambda lambda@"+lambda.pos);
+        //System.out.println("Namer visitLambda lambda@"+lambda.pos);
         if (lambda.expr != null) {
             var formalScope = new LambdaFormalScope(ctx.currentScope());
             typeLambda(lambda, ctx, formalScope);
@@ -345,7 +345,7 @@ public class Namer extends Phase<Tree.TopLevel, Tree.TopLevel> implements TypeLi
 
     @Override
     public void visitBlock(Tree.Block block, ScopeStack ctx) {
-        System.out.println("Namer visitBlock");
+        //System.out.println("Namer visitBlock");
 
         block.scope = new LocalScope(ctx.currentScope());
         ctx.open(block.scope);
@@ -357,19 +357,19 @@ public class Namer extends Phase<Tree.TopLevel, Tree.TopLevel> implements TypeLi
 
     @Override
     public void visitLocalVarDef(Tree.LocalVarDef def, ScopeStack ctx) {
-        System.out.println("Namer visitLocalVarDef " + def.name);
+        //System.out.println("Namer visitLocalVarDef " + def.name);
         if (def.typeLit == null) { // var 类型出现
-            System.out.println("Namer visitLocalVarDef - var");
+            //System.out.println("Namer visitLocalVarDef - var");
             var earlier = ctx.findConflict(def.name);
             if (earlier.isPresent()) { //命名冲突
-                System.out.println("Namer visitLocalVarDef - 命名有冲突");
+                //System.out.println("Namer visitLocalVarDef - 命名有冲突");
                 issue(new DeclConflictError(def.pos, def.name, earlier.get().pos));
                 assert(!def.initVal.isEmpty());//var类型等号后面不能为空
                 var initVal = def.initVal.get();
                 initVal.accept(this, ctx);
                 return;
             } else { //命名无冲突
-                System.out.println("Namer visitLocalVarDef - 命名无冲突");
+                //System.out.println("Namer visitLocalVarDef - 命名无冲突");
                 var symbol = new VarSymbol(def.name, BuiltInType.WAIT, def.id.pos);
                 ctx.declare(symbol);
                 def.symbol = symbol;
@@ -378,12 +378,12 @@ public class Namer extends Phase<Tree.TopLevel, Tree.TopLevel> implements TypeLi
                 initVal.accept(this, ctx);
             }
         } else { // 不是 var 类型
-            System.out.println("Namer visitLocalVarDef - not var");
+            //System.out.println("Namer visitLocalVarDef - not var");
             def.typeLit.accept(this, ctx);
 
             var earlier = ctx.findConflict(def.name);
             if (earlier.isPresent()) {
-                System.out.println("Namer visitLocalVarDef - 命名有冲突");
+                //System.out.println("Namer visitLocalVarDef - 命名有冲突");
                 issue(new DeclConflictError(def.pos, def.name, earlier.get().pos));
                 if (!def.initVal.isEmpty()) {
                     var initVal = def.initVal.get();
@@ -391,7 +391,7 @@ public class Namer extends Phase<Tree.TopLevel, Tree.TopLevel> implements TypeLi
                 }
                 return;
             }
-            System.out.println("Namer visitLocalVarDef - 命名无冲突");
+            //System.out.println("Namer visitLocalVarDef - 命名无冲突");
             if (def.typeLit.type.eq(BuiltInType.VOID)) {
                 issue(new BadVarTypeError(def.pos, def.name));
                 if (!def.initVal.isEmpty()) {
@@ -414,7 +414,7 @@ public class Namer extends Phase<Tree.TopLevel, Tree.TopLevel> implements TypeLi
     }
     @Override
     public void visitCall(Tree.Call expr, ScopeStack ctx){
-        System.out.println("Namer visitCall " + expr.pos);
+        //System.out.println("Namer visitCall " + expr.pos);
         expr.receiver.get().accept(this, ctx);
         for (Tree.Expr arg : expr.args) {
             arg.accept(this, ctx);
@@ -423,46 +423,46 @@ public class Namer extends Phase<Tree.TopLevel, Tree.TopLevel> implements TypeLi
 
     @Override
     public void visitBinary(Tree.Binary expr, ScopeStack ctx) {
-        System.out.println("Namer visitBinary");
+        //System.out.println("Namer visitBinary");
         expr.lhs.accept(this, ctx);
         expr.rhs.accept(this, ctx);
     }
 
     @Override
     public void visitReturn(Tree.Return ret, ScopeStack ctx) {
-        System.out.println("Namer visitReturn");
+        //System.out.println("Namer visitReturn");
         if (ret.expr.isPresent()) ret.expr.get().accept(this, ctx);
     }
 
     @Override
     public void visitNewArray(Tree.NewArray expr, ScopeStack ctx) {
-        System.out.println("Namer visitNewArray");
+        //System.out.println("Namer visitNewArray");
         expr.length.accept(this, ctx);
     }
 
     @Override
     public void visitAssign(Tree.Assign expr, ScopeStack ctx) {
-        System.out.println("Namer visitAssign");
+        //System.out.println("Namer visitAssign");
         expr.lhs.accept(this, ctx);
         expr.rhs.accept(this, ctx);
     }
 
     // @Override
     // public void visitVarSel(Tree.VarSel expr, ScopeStack ctx) {
-    //     System.out.println("Namer visitVarSel");
+    //     //System.out.println("Namer visitVarSel");
     //     expr.receiver.get().accept(this, ctx);
     // }
 
     @Override
     public void visitIndexSel(Tree.IndexSel expr, ScopeStack ctx) {
-        System.out.println("Namer visitIndexSel");
+        //System.out.println("Namer visitIndexSel");
         expr.array.accept(this, ctx);
         expr.index.accept(this, ctx);
     }
 
     @Override
     public void visitFor(Tree.For loop, ScopeStack ctx) {
-        System.out.println("Namer visitFor");
+        //System.out.println("Namer visitFor");
 
         loop.scope = new LocalScope(ctx.currentScope());
         ctx.open(loop.scope);
@@ -475,13 +475,13 @@ public class Namer extends Phase<Tree.TopLevel, Tree.TopLevel> implements TypeLi
 
     @Override
     public void visitExprEval(Tree.ExprEval exprEval, ScopeStack ctx) {
-        System.out.println("Namer visitExprEval" + exprEval.pos);
+        //System.out.println("Namer visitExprEval" + exprEval.pos);
         exprEval.expr.accept(this, ctx);
     }
 
     @Override
     public void visitIf(Tree.If stmt, ScopeStack ctx) {
-        System.out.println("Namer visitIf");
+        //System.out.println("Namer visitIf");
 
         stmt.trueBranch.accept(this, ctx);
         stmt.falseBranch.ifPresent(b -> b.accept(this, ctx));
@@ -489,7 +489,7 @@ public class Namer extends Phase<Tree.TopLevel, Tree.TopLevel> implements TypeLi
 
     @Override
     public void visitWhile(Tree.While loop, ScopeStack ctx) {
-        System.out.println("Namer visitWhile");
+        //System.out.println("Namer visitWhile");
 
         loop.body.accept(this, ctx);
     }

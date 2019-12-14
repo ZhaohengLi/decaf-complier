@@ -40,7 +40,7 @@ public class Typer extends Phase<Tree.TopLevel, Tree.TopLevel> implements TypeLi
 
     @Override
     public void visitTopLevel(Tree.TopLevel program, ScopeStack ctx) {
-        System.out.println("Typer visitTopLevel");
+        //System.out.println("Typer visitTopLevel");
         for (var clazz : program.classes) {
             clazz.accept(this, ctx);
         }
@@ -48,7 +48,7 @@ public class Typer extends Phase<Tree.TopLevel, Tree.TopLevel> implements TypeLi
 
     @Override
     public void visitClassDef(Tree.ClassDef clazz, ScopeStack ctx) {
-        System.out.println("Typer visitClassDef "+clazz.name);
+        //System.out.println("Typer visitClassDef "+clazz.name);
         ctx.open(clazz.symbol.scope);
         for (var field : clazz.fields) {
             field.accept(this, ctx);
@@ -58,7 +58,7 @@ public class Typer extends Phase<Tree.TopLevel, Tree.TopLevel> implements TypeLi
 
     @Override
     public void visitMethodDef(Tree.MethodDef method, ScopeStack ctx) {
-        System.out.println("Typer visitMethodDef "+method.name);
+        //System.out.println("Typer visitMethodDef "+method.name);
         if (!method.isAbstract()) {
             ctx.open(method.symbol.scope);
             method.body.accept(this, ctx);
@@ -79,7 +79,7 @@ public class Typer extends Phase<Tree.TopLevel, Tree.TopLevel> implements TypeLi
 
     @Override
     public void visitBlock(Tree.Block block, ScopeStack ctx) {
-        System.out.println("Typer visitBlock");
+        //System.out.println("Typer visitBlock");
         ctx.open(block.scope);
         for (var stmt : block.stmts) {
             stmt.accept(this, ctx);
@@ -91,7 +91,7 @@ public class Typer extends Phase<Tree.TopLevel, Tree.TopLevel> implements TypeLi
 
     @Override
     public void visitAssign(Tree.Assign stmt, ScopeStack ctx) {
-        System.out.println("Typer visitAssign");
+        //System.out.println("Typer visitAssign");
         stmt.lhs.accept(this, ctx);
         stmt.rhs.accept(this, ctx);
         var lt = stmt.lhs.type;
@@ -99,12 +99,12 @@ public class Typer extends Phase<Tree.TopLevel, Tree.TopLevel> implements TypeLi
 
         if (!suitableForLambdaAssign(stmt.lhs, ctx)) {
             issue(new MyLambdaError1(stmt.pos));
-            System.out.println("Typer visitAssign - MyLambdaError1 " + stmt.pos);
+            //System.out.println("Typer visitAssign - MyLambdaError1 " + stmt.pos);
         }
 
         if (lt.noError() && !rt.subtypeOf(lt)) {
             issue(new IncompatBinOpError(stmt.pos, lt.toString(), "=", rt.toString()));
-            System.out.println("Typer visitAssign - IncompatBinOpError " + stmt.pos);
+            //System.out.println("Typer visitAssign - IncompatBinOpError " + stmt.pos);
         }
 
         if (lt.noError() && (stmt.lhs instanceof Tree.VarSel) && ((Tree.VarSel)(stmt.lhs)).isMethod) {
@@ -130,14 +130,14 @@ public class Typer extends Phase<Tree.TopLevel, Tree.TopLevel> implements TypeLi
 
     @Override
     public void visitExprEval(Tree.ExprEval stmt, ScopeStack ctx) {
-        System.out.println("Typer visitExprEval");
+        //System.out.println("Typer visitExprEval");
         stmt.expr.accept(this, ctx);
     }
 
 
     @Override
     public void visitIf(Tree.If stmt, ScopeStack ctx) {
-        System.out.println("Typer visitIf");
+        //System.out.println("Typer visitIf");
         checkTestExpr(stmt.cond, ctx);
         stmt.trueBranch.accept(this, ctx);
         stmt.falseBranch.ifPresent(b -> b.accept(this, ctx));
@@ -148,7 +148,7 @@ public class Typer extends Phase<Tree.TopLevel, Tree.TopLevel> implements TypeLi
 
     @Override
     public void visitWhile(Tree.While loop, ScopeStack ctx) {
-        System.out.println("Typer visitWhile");
+        //System.out.println("Typer visitWhile");
         checkTestExpr(loop.cond, ctx);
         loopLevel++;
         loop.body.accept(this, ctx);
@@ -157,7 +157,7 @@ public class Typer extends Phase<Tree.TopLevel, Tree.TopLevel> implements TypeLi
 
     @Override
     public void visitFor(Tree.For loop, ScopeStack ctx) {
-        System.out.println("Typer visitFor");
+        //System.out.println("Typer visitFor");
         ctx.open(loop.scope);
         loop.init.accept(this, ctx);
         checkTestExpr(loop.cond, ctx);
@@ -172,7 +172,7 @@ public class Typer extends Phase<Tree.TopLevel, Tree.TopLevel> implements TypeLi
 
     @Override
     public void visitBreak(Tree.Break stmt, ScopeStack ctx) {
-        System.out.println("Typer visitBreak");
+        //System.out.println("Typer visitBreak");
         if (loopLevel == 0) {
             issue(new BreakOutOfLoopError(stmt.pos));
         }
@@ -180,18 +180,18 @@ public class Typer extends Phase<Tree.TopLevel, Tree.TopLevel> implements TypeLi
 
     @Override
     public void visitReturn(Tree.Return stmt, ScopeStack ctx) {
-        System.out.println("Typer visitReturn");
+        //System.out.println("Typer visitReturn");
         if (ctx.currentLambda() == null){
             var expected = ctx.currentMethod().type.returnType;
             stmt.expr.ifPresent(e -> e.accept(this, ctx));
             var actual = stmt.expr.map(e -> e.type).orElse(BuiltInType.VOID);
             if (actual.noError() && !actual.subtypeOf(expected)) {
-                System.out.println("Typer visitReturn - BadReturnTypeError");
+                //System.out.println("Typer visitReturn - BadReturnTypeError");
                 issue(new BadReturnTypeError(stmt.pos, expected.toString(), actual.toString()));
             }
             stmt.returns = stmt.expr.isPresent();// boolean 标志位
         } else {
-            System.out.println("Typer visitReturn - lambda");
+            //System.out.println("Typer visitReturn - lambda");
             stmt.expr.ifPresent(e -> e.accept(this, ctx));
             var actual = stmt.expr.map(e -> e.type).orElse(BuiltInType.VOID);
             stmt.isClosed = true;
@@ -203,7 +203,7 @@ public class Typer extends Phase<Tree.TopLevel, Tree.TopLevel> implements TypeLi
 
     @Override
     public void visitPrint(Tree.Print stmt, ScopeStack ctx) {
-        System.out.println("Typer visitPrint");
+        //System.out.println("Typer visitPrint");
         int i = 0;
         for (var expr : stmt.exprs) {
             expr.accept(this, ctx);
@@ -215,7 +215,7 @@ public class Typer extends Phase<Tree.TopLevel, Tree.TopLevel> implements TypeLi
     }
 
     private void checkTestExpr(Tree.Expr expr, ScopeStack ctx) {
-        System.out.println("Typer checkTestExpr");
+        //System.out.println("Typer checkTestExpr");
         expr.accept(this, ctx);
         if (expr.type.noError() && !expr.type.eq(BuiltInType.BOOL)) {
             issue(new BadTestExpr(expr.pos));
@@ -271,7 +271,7 @@ public class Typer extends Phase<Tree.TopLevel, Tree.TopLevel> implements TypeLi
     }
 
     public boolean compatible(Tree.UnaryOp op, Type operand) {
-        System.out.println("Typer compatible");
+        //System.out.println("Typer compatible");
         return switch (op) {
             case NEG -> operand.eq(BuiltInType.INT); // if e : int, then -e : int
             case NOT -> operand.eq(BuiltInType.BOOL); // if e : bool, then !e : bool
@@ -279,7 +279,7 @@ public class Typer extends Phase<Tree.TopLevel, Tree.TopLevel> implements TypeLi
     }
 
     public Type resultTypeOf(Tree.UnaryOp op) {
-        System.out.println("resultTypeOf");
+        //System.out.println("resultTypeOf");
         return switch (op) {
             case NEG -> BuiltInType.INT;
             case NOT -> BuiltInType.BOOL;
@@ -288,20 +288,20 @@ public class Typer extends Phase<Tree.TopLevel, Tree.TopLevel> implements TypeLi
 
     @Override
     public void visitBinary(Tree.Binary expr, ScopeStack ctx) {
-        System.out.println("Typer visitBinary");
+        //System.out.println("Typer visitBinary");
         expr.lhs.accept(this, ctx);
         expr.rhs.accept(this, ctx);
         var t1 = expr.lhs.type;
         var t2 = expr.rhs.type;
         if (t1.noError() && t2.noError() && !compatible(expr.op, t1, t2)) {
-            System.out.println("IncompatBinOpError");
+            //System.out.println("IncompatBinOpError");
             issue(new IncompatBinOpError(expr.pos, t1.toString(), Tree.opStr(expr.op), t2.toString()));
         }
         expr.type = resultTypeOf(expr.op);
     }
 
     public boolean compatible(Tree.BinaryOp op, Type lhs, Type rhs) {
-        System.out.println("Typer compatible");
+        //System.out.println("Typer compatible");
         if (op.compareTo(Tree.BinaryOp.ADD) >= 0 && op.compareTo(Tree.BinaryOp.MOD) <= 0) { // arith
             // if e1, e2 : int, then e1 + e2 : int
             return lhs.eq(BuiltInType.INT) && rhs.eq(BuiltInType.INT);
@@ -323,7 +323,7 @@ public class Typer extends Phase<Tree.TopLevel, Tree.TopLevel> implements TypeLi
     }
 
     public Type resultTypeOf(Tree.BinaryOp op) {
-        System.out.println("Typer resultTypeOf");
+        //System.out.println("Typer resultTypeOf");
         if (op.compareTo(Tree.BinaryOp.ADD) >= 0 && op.compareTo(Tree.BinaryOp.MOD) <= 0) { // arith
             return BuiltInType.INT;
         }
@@ -332,7 +332,7 @@ public class Typer extends Phase<Tree.TopLevel, Tree.TopLevel> implements TypeLi
 
     @Override
     public void visitNewArray(Tree.NewArray expr, ScopeStack ctx) {
-        System.out.println("Typer visitNewArray");
+        //System.out.println("Typer visitNewArray");
         expr.elemType.accept(this, ctx);
         expr.length.accept(this, ctx);
         var et = expr.elemType.type;
@@ -352,7 +352,7 @@ public class Typer extends Phase<Tree.TopLevel, Tree.TopLevel> implements TypeLi
 
     @Override
     public void visitNewClass(Tree.NewClass expr, ScopeStack ctx) {
-        System.out.println("Typer visitNewClass");
+        //System.out.println("Typer visitNewClass");
         var clazz = ctx.lookupClass(expr.clazz.name);
         if (clazz.isPresent()) {
             expr.symbol = clazz.get();
@@ -380,29 +380,29 @@ public class Typer extends Phase<Tree.TopLevel, Tree.TopLevel> implements TypeLi
 
     @Override
     public void visitVarSel(Tree.VarSel expr, ScopeStack ctx) {
-        System.out.println("Typer visitVarSel "+expr.name);
+        //System.out.println("Typer visitVarSel "+expr.name);
         if (expr.receiver.isEmpty()) {
-            System.out.println("Typer visitVarSel - has no receiver");
+            //System.out.println("Typer visitVarSel - has no receiver");
             // Variable, which should be complicated since a legal variable could refer to a local var,
             // a visible member var, and a class name.
             var symbol = ctx.lookupBefore(expr.name, localVarDefPos.orElse(expr.pos));
             if (symbol.isPresent()) {
-                System.out.println("Typer visitVarSel - symbol.isPresent()");
+                //System.out.println("Typer visitVarSel - symbol.isPresent()");
                 if (symbol.get().isVarSymbol()) {
-                    System.out.println("Typer visitVarSel - isVarSymbol()");
+                    //System.out.println("Typer visitVarSel - isVarSymbol()");
                     var var = (VarSymbol) symbol.get();
                     expr.symbol = var;
                     if (var.type.eq(BuiltInType.WAIT)) {
                         issue(new UndeclVarError(expr.pos, expr.name));
-                        System.out.println("Typer visitVarSel - UndeclVarError " + expr.pos);
+                        //System.out.println("Typer visitVarSel - UndeclVarError " + expr.pos);
                         expr.type = BuiltInType.ERROR;
                         return;
                     }
                     expr.type = var.type;
-                    System.out.println("Typer visitVarSel - expr.symbol is "+expr.symbol);
-                    System.out.println("Typer visitVarSel - expr.type is "+expr.type);
+                    //System.out.println("Typer visitVarSel - expr.symbol is "+expr.symbol);
+                    //System.out.println("Typer visitVarSel - expr.type is "+expr.type);
                     if (var.isMemberVar()) {
-                        System.out.println("Typer visitVarSel - var.isMemberVar()");
+                        //System.out.println("Typer visitVarSel - var.isMemberVar()");
                         if (ctx.currentMethod().isStatic()) {
                             issue(new RefNonStaticError(expr.pos, ctx.currentMethod().name, expr.name));
                         } else {
@@ -413,7 +413,7 @@ public class Typer extends Phase<Tree.TopLevel, Tree.TopLevel> implements TypeLi
                 }
 
                 if (symbol.get().isClassSymbol() && allowClassNameVar) { // special case: a class name
-                    System.out.println("Typer visitVarSel - isClassSymbol()");
+                    //System.out.println("Typer visitVarSel - isClassSymbol()");
                     var clazz = (ClassSymbol) symbol.get();
                     expr.type = clazz.type;
                     expr.isClassName = true;
@@ -432,14 +432,14 @@ public class Typer extends Phase<Tree.TopLevel, Tree.TopLevel> implements TypeLi
                     return;
                 }
             }
-            System.out.println("Typer visitVarSel - !symbol.isPresent()");
+            //System.out.println("Typer visitVarSel - !symbol.isPresent()");
             expr.type = BuiltInType.ERROR;
             issue(new UndeclVarError(expr.pos, expr.name));
             return;
         }
 
         // has receiver
-        System.out.println("Typer visitVarSel - has receiver");
+        //System.out.println("Typer visitVarSel - has receiver");
         var receiver = expr.receiver.get();
         allowClassNameVar = true;
         receiver.accept(this, ctx);
@@ -501,7 +501,7 @@ public class Typer extends Phase<Tree.TopLevel, Tree.TopLevel> implements TypeLi
 
     @Override
     public void visitIndexSel(Tree.IndexSel expr, ScopeStack ctx) {
-        System.out.println("Typer visitIndexSel");
+        //System.out.println("Typer visitIndexSel");
         expr.array.accept(this, ctx);
         expr.index.accept(this, ctx);
         var at = expr.array.type;
@@ -526,24 +526,24 @@ public class Typer extends Phase<Tree.TopLevel, Tree.TopLevel> implements TypeLi
 
     @Override
     public void visitCall(Tree.Call expr, ScopeStack ctx) {
-        System.out.println("Typer visitCall");
+        //System.out.println("Typer visitCall");
         Tree.Expr id =  expr.receiver.get();
         id.accept(this, ctx);
-        System.out.println("Typer visitCall - after accept id");
+        //System.out.println("Typer visitCall - after accept id");
 
         if (!id.type.noError()) {
-            System.out.println("Typer visitCall - type has error");
+            //System.out.println("Typer visitCall - type has error");
             expr.type = BuiltInType.ERROR;
             return;
         }
         if (!id.type.isFuncType()) {
-            System.out.println("Typer visitCall - type is not functype");
+            //System.out.println("Typer visitCall - type is not functype");
             issue(new MyFunCallError1(expr.pos, id.type.toString()));
             expr.type = BuiltInType.ERROR;
             return;
         }
         if ((id instanceof Tree.VarSel) && ((Tree.VarSel)id).isArrayLength) {
-            System.out.println("Typer visitCall - is array length");
+            //System.out.println("Typer visitCall - is array length");
             if (!expr.args.isEmpty()) issue(new BadLengthArgError(expr.pos, expr.args.size()));
             expr.isArrayLength = true;
             expr.type = BuiltInType.INT;
@@ -553,7 +553,7 @@ public class Typer extends Phase<Tree.TopLevel, Tree.TopLevel> implements TypeLi
     }
 
     private void typeCall(Tree.Call expr, ScopeStack ctx) {
-        System.out.println("Typer typeCall");
+        //System.out.println("Typer typeCall");
         for (Tree.Expr arg : expr.args) {
             arg.accept(this, ctx);
         }
@@ -580,7 +580,7 @@ public class Typer extends Phase<Tree.TopLevel, Tree.TopLevel> implements TypeLi
 
     @Override
     public void visitClassTest(Tree.ClassTest expr, ScopeStack ctx) {
-        System.out.println("Typer visitClassTest");
+        //System.out.println("Typer visitClassTest");
         expr.obj.accept(this, ctx);
         expr.type = BuiltInType.BOOL;
 
@@ -597,7 +597,7 @@ public class Typer extends Phase<Tree.TopLevel, Tree.TopLevel> implements TypeLi
 
     @Override
     public void visitClassCast(Tree.ClassCast expr, ScopeStack ctx) {
-        System.out.println("Typer visitClassCast");
+        //System.out.println("Typer visitClassCast");
         expr.obj.accept(this, ctx);
 
         if (!expr.obj.type.isClassType()) {
@@ -616,7 +616,7 @@ public class Typer extends Phase<Tree.TopLevel, Tree.TopLevel> implements TypeLi
 
     @Override
     public void visitLocalVarDef(Tree.LocalVarDef stmt, ScopeStack ctx) {
-        System.out.println("Typer visitLocalVarDef " + stmt.name);
+        //System.out.println("Typer visitLocalVarDef " + stmt.name);
         if (stmt.symbol.type.eq(BuiltInType.WAIT)){
             assert(!stmt.initVal.isEmpty());//var类型等号后面不能为空
             var initVal = stmt.initVal.get();
@@ -640,7 +640,7 @@ public class Typer extends Phase<Tree.TopLevel, Tree.TopLevel> implements TypeLi
             var rt = initVal.type;
 
             if (lt.noError() && !rt.subtypeOf(lt)) {
-                System.out.println("IncompatBinOpError");
+                //System.out.println("IncompatBinOpError");
                 issue(new IncompatBinOpError(stmt.assignPos, lt.toString(), "=", rt.toString()));
             }
         }
@@ -648,7 +648,7 @@ public class Typer extends Phase<Tree.TopLevel, Tree.TopLevel> implements TypeLi
 
     @Override
     public void visitLambda(Tree.Lambda lambda, ScopeStack ctx) {
-        System.out.println("Typer visitLambda lambda@"+lambda.pos);
+        //System.out.println("Typer visitLambda lambda@"+lambda.pos);
         if (lambda.expr != null) {
             ctx.open(lambda.symbol.formalScope);
             ctx.open(lambda.symbol.formalScope.nestedLocalScope());
@@ -660,7 +660,7 @@ public class Typer extends Phase<Tree.TopLevel, Tree.TopLevel> implements TypeLi
             ctx.open(lambda.symbol.formalScope);
             lambda.body.accept(this, ctx);
             lambda.symbol.type.returnType = getLambdaBlockReturnType(lambda, ctx);//不能在close lambdaformalscope后做
-            System.out.println("Typer visitLambda - lambdaReturnType is" + lambda.symbol.type.returnType);
+            //System.out.println("Typer visitLambda - lambdaReturnType is" + lambda.symbol.type.returnType);
             ctx.close();
         } else {
             //error
@@ -668,15 +668,15 @@ public class Typer extends Phase<Tree.TopLevel, Tree.TopLevel> implements TypeLi
     }
 
     private Type getLambdaBlockReturnType(Tree.Lambda lambda, ScopeStack ctx) {
-        System.out.println("Typer getLambdaBlockReturnType");
+        //System.out.println("Typer getLambdaBlockReturnType");
         if (ctx.currentLambdaReturnTypeList().isEmpty()) { //内部没有返回值
-            System.out.println("Typer getLambdaBlockReturnType - 内部没有返回值");
+            //System.out.println("Typer getLambdaBlockReturnType - 内部没有返回值");
             return BuiltInType.VOID;
         } else { //内部有返回值
-            System.out.println("Typer getLambdaBlockReturnType - 内部有返回值");
+            //System.out.println("Typer getLambdaBlockReturnType - 内部有返回值");
 
             if (!lambda.body.isClosed) {
-                System.out.println("Typer getLambdaBlockReturnType - !lambda.body.isClosed");
+                //System.out.println("Typer getLambdaBlockReturnType - !lambda.body.isClosed");
 
                 for (var type : ctx.currentLambdaReturnTypeList()) {
                     if (!type.eq(BuiltInType.VOID)) {
@@ -687,10 +687,10 @@ public class Typer extends Phase<Tree.TopLevel, Tree.TopLevel> implements TypeLi
             }
 
             Type type = getUpperBound(ctx.currentLambdaReturnTypeList());
-            System.out.println("Typer getLambdaBlockReturnType - getUpperBound is " + type);
+            //System.out.println("Typer getLambdaBlockReturnType - getUpperBound is " + type);
 
             if (type.eq(BuiltInType.ERROR)) {
-                System.out.println("Typer getLambdaBlockReturnType - MyLambdaError2");
+                //System.out.println("Typer getLambdaBlockReturnType - MyLambdaError2");
                 issue(new MyLambdaError2(lambda.body.pos));
             }
             return type;
@@ -698,18 +698,18 @@ public class Typer extends Phase<Tree.TopLevel, Tree.TopLevel> implements TypeLi
     }
 
     private Type getUpperBound(List<Type> typeList) {
-        System.out.println("Typer getUpperBound of " + typeList);
+        //System.out.println("Typer getUpperBound of " + typeList);
 
         Type selected = BuiltInType.NULL;
         for (Type type : typeList) if (!type.eq(BuiltInType.NULL)) { selected = type; break; } //选择一个非null类型
         if (selected.eq(BuiltInType.NULL)) return BuiltInType.NULL; //如果全是 BuiltInType.NULL 则返回 BuiltInType.NULL
 
         if (selected.isBaseType() || selected.isVoidType() || selected.isArrayType()) {
-            System.out.println("Typer getUpperBound - 基本类型");
+            //System.out.println("Typer getUpperBound - 基本类型");
             for (Type type : typeList) if (!type.eq(selected)) return BuiltInType.ERROR;
             return selected;
         } else if (selected.isClassType()) { //处理classtype
-            System.out.println("Typer getUpperBound - class类型");
+            //System.out.println("Typer getUpperBound - class类型");
             for (Type type : typeList) {
                 if (type.eq(BuiltInType.NULL)) continue; //遇到 null 跳过
                 if (!type.isClassType()) return BuiltInType.ERROR; // 遇到不是 classtype 报错
@@ -728,11 +728,11 @@ public class Typer extends Phase<Tree.TopLevel, Tree.TopLevel> implements TypeLi
                 }
             }
         } else if (selected.isFuncType()) { //处理 FunType
-            System.out.println("Typer getUpperBound - 函数类型");
+            //System.out.println("Typer getUpperBound - 函数类型");
             List<Type> r = new ArrayList<>();
             List<List<Type>> t = new ArrayList<>();
             int argCount = ((FunType)selected).arity();//参数个数
-            System.out.println("Typer getUpperBound - 函数类型 argCount is " + argCount);
+            //System.out.println("Typer getUpperBound - 函数类型 argCount is " + argCount);
             for (int i=0; i<argCount; i++) t.add(new ArrayList<Type>());
             for (Type type : typeList) {
                 if (type.eq(BuiltInType.NULL)) continue;
@@ -750,7 +750,7 @@ public class Typer extends Phase<Tree.TopLevel, Tree.TopLevel> implements TypeLi
 
             for (int i=0; i<argCount; i++) {
                 Type lowerBound = getLowerBound(t.get(i));
-                System.out.println("Typer getUpperBound - 函数类型 从 lowerBound 中返回 " + lowerBound);
+                //System.out.println("Typer getUpperBound - 函数类型 从 lowerBound 中返回 " + lowerBound);
                 if (lowerBound.eq(BuiltInType.ERROR)) return BuiltInType.ERROR;
                 T.add(lowerBound);
             }
@@ -760,34 +760,34 @@ public class Typer extends Phase<Tree.TopLevel, Tree.TopLevel> implements TypeLi
     }
 
     private Type getLowerBound(List<Type> typeList) {
-        System.out.println("Typer getLowerBound of " + typeList);
+        //System.out.println("Typer getLowerBound of " + typeList);
 
         Type selected = BuiltInType.NULL;
         for (Type type : typeList) if (!type.eq(BuiltInType.NULL)) { selected = type; break; } //选择一个非null类型
         if (selected.eq(BuiltInType.NULL)) return BuiltInType.NULL; //如果全是 BuiltInType.NULL 则返回 BuiltInType.NULL
 
         if (selected.isBaseType() || selected.isVoidType() || selected.isArrayType()) {
-            System.out.println("Typer getLowerBound - 基本类型");
+            //System.out.println("Typer getLowerBound - 基本类型");
             for (Type type : typeList) if (!type.eq(selected)) return BuiltInType.ERROR;
             return selected;
         } else if (selected.isClassType()) { //处理classtype
-            System.out.println("Typer getLowerBound - class类型");
+            //System.out.println("Typer getLowerBound - class类型");
             for (Type type : typeList) {
                 if (type.eq(BuiltInType.NULL)) continue; //遇到 null 跳过
                 if (!type.isClassType()) {
-                    System.out.println("Typer getLowerBound - class类型 - !type.isClassType " + type);
+                    //System.out.println("Typer getLowerBound - class类型 - !type.isClassType " + type);
                     return BuiltInType.ERROR;
                 }// 遇到不是 classtype 报错
                 if (selected.subtypeOf(type)) continue;
                 if (type.subtypeOf(selected)) { selected = type; continue; }
                 if (!type.subtypeOf(selected) && !selected.subtypeOf(type)) {
-                    System.out.println("Typer getLowerBound - class类型 - 互不是父子 " + type);
+                    //System.out.println("Typer getLowerBound - class类型 - 互不是父子 " + type);
                     return BuiltInType.ERROR;
                 }
             }
             return selected;
         } else if (selected.isFuncType()) { //处理 FunType
-            System.out.println("Typer getLowerBound - 函数类型");
+            //System.out.println("Typer getLowerBound - 函数类型");
             List<Type> r = new ArrayList<>();
             List<List<Type>> t = new ArrayList<>();
             int argCount = ((FunType)selected).arity();//参数个数
