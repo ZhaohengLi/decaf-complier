@@ -380,7 +380,7 @@ public class Typer extends Phase<Tree.TopLevel, Tree.TopLevel> implements TypeLi
 
     @Override
     public void visitVarSel(Tree.VarSel expr, ScopeStack ctx) {
-        //System.out.println("Typer visitVarSel "+expr.name);
+        System.out.println("Typer visitVarSel "+expr.pos);
         if (expr.receiver.isEmpty()) {
             //System.out.println("Typer visitVarSel - has no receiver");
             // Variable, which should be complicated since a legal variable could refer to a local var,
@@ -526,7 +526,7 @@ public class Typer extends Phase<Tree.TopLevel, Tree.TopLevel> implements TypeLi
 
     @Override
     public void visitCall(Tree.Call expr, ScopeStack ctx) {
-        //System.out.println("Typer visitCall");
+        System.out.println("Typer visitCall @"+expr.pos);
         Tree.Expr id =  expr.receiver.get();
         id.accept(this, ctx);
         //System.out.println("Typer visitCall - after accept id");

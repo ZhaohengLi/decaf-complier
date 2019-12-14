@@ -233,7 +233,13 @@ public interface TacEmitter extends Visitor<FuncVisitor> {
         };
         expr.lhs.accept(this, mv);
         expr.rhs.accept(this, mv);
-        expr.val = mv.visitBinary(op, expr.lhs.val, expr.rhs.val);
+
+        if ((op == TacInstr.Binary.Op.DIV || op == TacInstr.Binary.Op.MOD)&& expr.rhs instanceof Tree.IntLit && ((Tree.IntLit)expr.rhs).value == 0) {
+          mv.visitPrint(RuntimeError.DIV_BY_ZERO_ERROR);
+          mv.visitIntrinsicCall(Intrinsic.HALT);
+        } else {
+          expr.val = mv.visitBinary(op, expr.lhs.val, expr.rhs.val);
+        }
     }
 
 
@@ -263,6 +269,7 @@ public interface TacEmitter extends Visitor<FuncVisitor> {
 
     @Override
     default void visitVarSel(Tree.VarSel expr, FuncVisitor mv) {
+        System.out.println("visitVarSel @"+expr.pos);
         if (expr.symbol.isMemberVar()) {
             var object = expr.receiver.get();
             object.accept(this, mv);
@@ -274,6 +281,7 @@ public interface TacEmitter extends Visitor<FuncVisitor> {
 
     @Override
     default void visitCall(Tree.Call expr, FuncVisitor mv) {
+        System.out.println("visitCall @"+expr.pos);
         if (expr.isArrayLength) { // special case for array.length()
             var array = expr.receiver.get();
             array.accept(this, mv);
