@@ -71,7 +71,7 @@ public interface Visitor<C> {
     }
 
     default void visitExprEval(Tree.ExprEval that, C ctx) {
-        System.out.println("Default visitExprEval");
+        //System.out.println("Default visitExprEval");
         visitOthers(that, ctx);
     }
 
@@ -169,7 +169,7 @@ public interface Visitor<C> {
 
     /* The default handler */
     default void visitOthers(TreeNode that, C ctx) {
-        System.out.println("visitOthers");
+        //System.out.println("visitOthers");
 
         // do nothing
     }
