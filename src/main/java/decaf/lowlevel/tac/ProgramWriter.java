@@ -10,6 +10,15 @@ import java.util.*;
  * encoding.
  */
 public class ProgramWriter {
+
+
+      public FuncLabel addFuncLab(String clazz, String method){
+          ctx.putFuncLabel(clazz, method);
+          ctx.newFunctionLable(clazz, method);
+          FuncLabel functionLable = ctx.getFuncLabel(clazz, method);
+          ctx.getVirtualTable().memberMethods.add(functionLable);
+          return functionLable;
+      }
     /**
      * Constructor.
      *
@@ -33,23 +42,27 @@ public class ProgramWriter {
             }
         }
 
+        var vt = new VTable(".globl", Optional.empty());
+        ctx.putVTable(vt);
+        ctx.setVirtualVTable(vt);
         // Build virtual tables.
         for (var clazz : classes.values()) {
             buildVTableFor(clazz);
         }
-
         // Create the `new` method for every class.
         for (var clazz : classes.values()) {
             createConstructorFor(clazz.name);
         }
     }
 
+
+
     /**
      * Generate TAC code for the main method.
      */
     public FuncVisitor visitMainMethod() {
         var entry = FuncLabel.MAIN_LABEL;
-        return new FuncVisitor(entry, 0, ctx);
+        return new FuncVisitor(entry, 0, ctx, this);
     }
 
     /**
@@ -61,7 +74,7 @@ public class ProgramWriter {
      */
     public FuncVisitor visitFunc(String className, String funcName, int numArgs) {
         var entry = ctx.getFuncLabel(className, funcName);
-        return new FuncVisitor(entry, numArgs, ctx);
+        return new FuncVisitor(entry, numArgs, ctx, this);
     }
 
     /**
@@ -87,8 +100,7 @@ public class ProgramWriter {
      */
     private void createConstructorFor(String clazz) {
         var entry = ctx.getConstructorLabel(clazz);
-        var mv = new FuncVisitor(entry, 0, ctx);
-
+        var mv = new FuncVisitor(entry, 0, ctx, this);
         var vtbl = ctx.getVTable(clazz);
         var size = mv.visitLoad(vtbl.getObjectSize());
         var object = mv.visitIntrinsicCall(Intrinsic.ALLOCATE, true, size);
@@ -97,6 +109,7 @@ public class ProgramWriter {
         mv.visitReturn(object);
         mv.visitEnd();
     }
+
 
     private void buildVTableFor(ClassInfo clazz) {
         if (ctx.hasVTable(clazz.name)) return;
@@ -148,16 +161,9 @@ public class ProgramWriter {
 
     class Context {
 
-        void putConstructorLabel(String clazz) {
-            putFuncLabel(clazz, "new");
-        }
 
-        FuncLabel getConstructorLabel(String clazz) {
-            return getFuncLabel(clazz, "new");
-        }
-
-        void putFuncLabel(String clazz, String method) {
-            labels.put(clazz + "." + method, new FuncLabel(clazz, method));
+        List<VTable> getVTables() {
+            return new ArrayList<>(vtables.values());
         }
 
         FuncLabel getFuncLabel(String clazz, String method) {
@@ -170,20 +176,18 @@ public class ProgramWriter {
             return new Label(name);
         }
 
-        VTable getVTable(String clazz) {
-            return vtables.get(clazz);
-        }
+        public int currOffset = 8;
+
 
         boolean hasVTable(String clazz) {
             return vtables.containsKey(clazz);
         }
 
-        void putVTable(VTable vtbl) {
-            vtables.put(vtbl.className, vtbl);
-        }
 
-        List<VTable> getVTables() {
-            return new ArrayList<>(vtables.values());
+
+        void newFunctionLable(String clazz, String member) {
+            offsets.put(clazz + "." + member, currOffset);
+            currOffset += 4;
         }
 
         int getOffset(String clazz, String member) {
@@ -206,6 +210,23 @@ public class ProgramWriter {
             }
         }
 
+
+
+                VTable getVirtualTable() {
+                    return vt;
+                }
+
+                VTable getVTable(String clazz) {
+                    return vtables.get(clazz);
+                }
+
+                FuncLabel getConstructorLabel(String clazz) {
+                    return getFuncLabel(clazz, "new");
+                }
+
+                void setVirtualVTable(VTable vvt) {
+                    vt = vvt;
+                }
         private Map<String, FuncLabel> labels = new TreeMap<>();
 
         private Map<String, VTable> vtables = new TreeMap<>();
@@ -213,6 +234,21 @@ public class ProgramWriter {
         private Map<String, Integer> offsets = new TreeMap<>();
 
         List<TacFunc> funcs = new ArrayList<>();
+
+                void putConstructorLabel(String clazz) {
+                    putFuncLabel(clazz, "new");
+                }
+
+                void putFuncLabel(String clazz, String method) {
+                    labels.put(clazz + "." + method, new FuncLabel(clazz, method));
+                }
+
+                void putVTable(VTable vtbl) {
+                    vtables.put(vtbl.className, vtbl);
+                }
+
+                public VTable vt;
+
 
         private int nextTempLabelId = 1;
     }
