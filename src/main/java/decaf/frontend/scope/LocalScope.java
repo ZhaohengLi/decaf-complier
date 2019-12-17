@@ -10,15 +10,14 @@ public class LocalScope extends Scope {
 
     public LocalScope(Scope parent) {
         super(Kind.LOCAL);
-        assert parent.isFormalOrLocalOrLambdaScope();
+        System.out.println("form pretty");
+        assert parent.isFormalOrLocalScope();
         if (parent.isFormalScope()) {
             ((FormalScope) parent).setNested(this);
-        } else if (parent.isLocalScope()) {
-            ((LocalScope) parent).nested.add(this);
-        } else if (parent.isLambdaFormalScope()) {
-            ((LambdaFormalScope) parent).setNested(this);
+        } else if(parent.isLambdaLocalScope()) {
+            ((LambdaLocalScope)parent).nested.add(this);
         } else {
-            //error
+            ((LocalScope) parent).nested.add(this);
         }
     }
 

@@ -38,6 +38,25 @@ abstract class AbstractParser {
         token = nextToken();
     }
 
+        protected SemValue svBlock(Tree.Block block) {
+            var v = new SemValue(SemValue.Kind.BLOCK, block == null ? Pos.NoPos : block.pos);
+            v.block = block;
+            return v;
+        }
+
+        protected SemValue svExpr(Tree.Expr expr) {
+            var v = new SemValue(SemValue.Kind.EXPR, expr == null ? Pos.NoPos : expr.pos);
+            v.expr = expr;
+            return v;
+        }
+
+        protected SemValue svExprs(Tree.Expr... exprs) {
+            var v = new SemValue(SemValue.Kind.EXPR_LIST, exprs.length == 0 ? Pos.NoPos : exprs[0].pos);
+            v.exprList = new ArrayList<>();
+            v.exprList.addAll(Arrays.asList(exprs));
+            return v;
+        }
+
     /**
      * Final parsing result to be written by the concrete parser. Remember in `Decaf.jacc`, we designed an action:
      * <pre>
@@ -103,6 +122,13 @@ abstract class AbstractParser {
         return v;
     }
 
+        protected SemValue svVars(Tree.LocalVarDef... vars) {
+            var v = new SemValue(SemValue.Kind.FIELD_LIST, vars.length == 0 ? Pos.NoPos : vars[0].pos);
+            v.varList = new ArrayList<>();
+            v.varList.addAll(Arrays.asList(vars));
+            return v;
+        }
+
     protected SemValue svFields(Tree.Field... fields) {
         var v = new SemValue(SemValue.Kind.FIELD_LIST, fields.length == 0 ? Pos.NoPos : fields[0].pos);
         v.fieldList = new ArrayList<>();
@@ -116,6 +142,52 @@ abstract class AbstractParser {
         v.id = id;
         return v;
     }
+    protected SemValue svStmt(Tree.Stmt stmt) {
+        var v = new SemValue(SemValue.Kind.STMT, stmt == null ? Pos.NoPos : stmt.pos);
+        v.stmt = stmt;
+        return v;
+    }
+
+            protected SemValue svLValue(Tree.LValue lValue) {
+                var v = new SemValue(SemValue.Kind.LVALUE, lValue == null ? Pos.NoPos : lValue.pos);
+                v.lValue = lValue;
+                return v;
+            }
+
+            protected SemValue svId(Tree.Id id) {
+                var v = new SemValue(SemValue.Kind.ID, id == null ? Pos.NoPos : id.pos);
+                v.id = id;
+                return v;
+            }
+
+            protected SemValue buildBinaryExpr(SemValue first, List<SemValue> rest) {
+                if (rest.isEmpty()) {
+                    return first;
+                }
+
+                var expr = first.expr;
+                for (var sv : rest) {
+                    expr = new Tree.Binary(Tree.BinaryOp.values()[sv.code], expr, sv.expr, sv.pos);
+                }
+                return svExpr(expr);
+            }
+
+    protected SemValue svStmts(Tree.Stmt... stmts) {
+        var v = new SemValue(SemValue.Kind.STMT_LIST, stmts.length == 0 ? Pos.NoPos : stmts[0].pos);
+        v.stmtList = new ArrayList<>();
+        v.stmtList.addAll(Arrays.asList(stmts));
+        return v;
+    }
+
+
+    /**
+     * Helper method used by the concrete parser: report error.
+     *
+     * @param msg the error message
+     */
+    protected void yyerror(String msg) {
+        issuer.issue(new MsgError(lexer.getPos(), msg));
+    }
 
     protected SemValue svVarLocal(Tree.TypeLit type, Tree.Id id, Pos assignPos, Tree.Expr initVal, Pos pos) {
         var v = new SemValue(SemValue.Kind.VAR, pos);
@@ -126,12 +198,6 @@ abstract class AbstractParser {
         return v;
     }
 
-    protected SemValue svVars(Tree.LocalVarDef... vars) {
-        var v = new SemValue(SemValue.Kind.VAR_LIST, vars.length == 0 ? Pos.NoPos : vars[0].pos);
-        v.varList = new ArrayList<>();
-        v.varList.addAll(Arrays.asList(vars));
-        return v;
-    }
 
     protected SemValue svType(Tree.TypeLit type) {
         var v = new SemValue(SemValue.Kind.TYPE, type == null ? Pos.NoPos : type.pos);
@@ -146,68 +212,5 @@ abstract class AbstractParser {
         return v;
     }
 
-    protected SemValue svStmt(Tree.Stmt stmt) {
-        var v = new SemValue(SemValue.Kind.STMT, stmt == null ? Pos.NoPos : stmt.pos);
-        v.stmt = stmt;
-        return v;
-    }
 
-    protected SemValue svStmts(Tree.Stmt... stmts) {
-        var v = new SemValue(SemValue.Kind.STMT_LIST, stmts.length == 0 ? Pos.NoPos : stmts[0].pos);
-        v.stmtList = new ArrayList<>();
-        v.stmtList.addAll(Arrays.asList(stmts));
-        return v;
-    }
-
-    protected SemValue svBlock(Tree.Block block) {
-        var v = new SemValue(SemValue.Kind.BLOCK, block == null ? Pos.NoPos : block.pos);
-        v.block = block;
-        return v;
-    }
-
-    protected SemValue svExpr(Tree.Expr expr) {
-        var v = new SemValue(SemValue.Kind.EXPR, expr == null ? Pos.NoPos : expr.pos);
-        v.expr = expr;
-        return v;
-    }
-
-    protected SemValue svExprs(Tree.Expr... exprs) {
-        var v = new SemValue(SemValue.Kind.EXPR_LIST, exprs.length == 0 ? Pos.NoPos : exprs[0].pos);
-        v.exprList = new ArrayList<>();
-        v.exprList.addAll(Arrays.asList(exprs));
-        return v;
-    }
-
-    protected SemValue svLValue(Tree.LValue lValue) {
-        var v = new SemValue(SemValue.Kind.LVALUE, lValue == null ? Pos.NoPos : lValue.pos);
-        v.lValue = lValue;
-        return v;
-    }
-
-    protected SemValue svId(Tree.Id id) {
-        var v = new SemValue(SemValue.Kind.ID, id == null ? Pos.NoPos : id.pos);
-        v.id = id;
-        return v;
-    }
-
-    protected SemValue buildBinaryExpr(SemValue first, List<SemValue> rest) {
-        if (rest.isEmpty()) {
-            return first;
-        }
-
-        var expr = first.expr;
-        for (var sv : rest) {
-            expr = new Tree.Binary(Tree.BinaryOp.values()[sv.code], expr, sv.expr, sv.pos);
-        }
-        return svExpr(expr);
-    }
-
-    /**
-     * Helper method used by the concrete parser: report error.
-     *
-     * @param msg the error message
-     */
-    protected void yyerror(String msg) {
-        issuer.issue(new MsgError(lexer.getPos(), msg));
-    }
 }

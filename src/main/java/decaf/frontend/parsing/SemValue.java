@@ -14,8 +14,8 @@ import java.util.List;
  */
 class SemValue {
     enum Kind {
-        TOKEN, CLASS, CLASS_LIST, FIELD, FIELD_LIST, VAR, VAR_LIST, TYPE, STMT, STMT_LIST, BLOCK, EXPR, EXPR_LIST,
-        LVALUE, ID, TEMPORARY, TYPE_LIST
+        TOKEN, CLASS, CLASS_LIST, FIELD, FIELD_LIST, VAR, VAR_LIST, TYPE, STMT, STMT_LIST, BLOCK, EXPR, EXPR_LIST, TYPE_LIST,
+        LVALUE, ID, TEMPORARY
     }
 
     /**
@@ -106,21 +106,18 @@ class SemValue {
                 case Tokens.CLASS -> "keyword  : class";
                 case Tokens.ELSE -> "keyword  : else";
                 case Tokens.EXTENDS -> "keyword  : extends";
-                case Tokens.FOR -> "keyword  : for";
-                case Tokens.IF -> "keyword  : if";
-                case Tokens.INT -> "keyword  : int";
-                case Tokens.INSTANCE_OF -> "keyword : instanceof";
-                case Tokens.NEW -> "keyword  : new";
-                case Tokens.NULL -> "keyword  : null";
-                case Tokens.PRINT -> "keyword  : Print";
-                case Tokens.READ_INTEGER -> "keyword  : ReadInteger";
                 case Tokens.READ_LINE -> "keyword  : ReadLine";
                 case Tokens.RETURN -> "keyword  : return";
                 case Tokens.STRING -> "keyword  : string";
+                case Tokens.FOR -> "keyword  : for";
+                case Tokens.IF -> "keyword  : if";
                 case Tokens.THIS -> "keyword  : this";
                 case Tokens.VOID -> "keyword  : void";
                 case Tokens.WHILE -> "keyword  : while";
                 case Tokens.STATIC -> "keyword : static";
+                case Tokens.ABSTRACT -> "keyword : abstract";
+                case Tokens.FUN -> "keyword : fun";
+                case Tokens.VAR -> "keyword : var";
                 case Tokens.INT_LIT -> "int literal : " + intVal;
                 case Tokens.BOOL_LIT -> "bool literal : " + boolVal;
                 case Tokens.STRING_LIT -> "string literal : " + StringUtils.quote(strVal);
@@ -130,9 +127,16 @@ class SemValue {
                 case Tokens.GREATER_EQUAL -> "operator : >=";
                 case Tokens.LESS_EQUAL -> "operator : <=";
                 case Tokens.NOT_EQUAL -> "operator : !=";
+                case Tokens.INT -> "keyword  : int";
+                case Tokens.INSTANCE_OF -> "keyword : instanceof";
+                case Tokens.NEW -> "keyword  : new";
+                case Tokens.NULL -> "keyword  : null";
+                case Tokens.PRINT -> "keyword  : Print";
+                case Tokens.READ_INTEGER -> "keyword  : ReadInteger";
+
+
                 case Tokens.OR -> "operator : ||";
-                case Tokens.ABSTRACT -> "keyword : abstract";
-                case Tokens.NONETYPE -> "keyword : var";
+                case Tokens.ARROW -> "operator : =>";
                 default -> "operator : " + (char) code;
             };
             case CLASS -> "CLASS: " + clazz;
@@ -140,8 +144,6 @@ class SemValue {
             case FIELD -> "FIELD: " + field;
             case FIELD_LIST -> "FIELD_LIST: " + fieldList;
             case VAR -> "VAR: " + type + " " + id;
-            case VAR_LIST -> "VAR_LIST: " + varList;
-            case TYPE_LIST -> "TYPE_LIST: " + typeList;
             case TYPE -> "TYPE: " + type;
             case STMT -> "STMT: " + stmt;
             case STMT_LIST -> "STMT_LIST: " + stmtList;
@@ -151,6 +153,9 @@ class SemValue {
             case LVALUE -> "LVALUE: " + lValue;
             case ID -> "ID: " + id;
             case TEMPORARY -> "TEMPORARY";
+            case VAR_LIST -> "VAR_LIST: " + varList;
+            case TYPE_LIST -> "TYPE_LIST: " + typeList;
+
         };
         return String.format("%-9s%s", pos, msg);
     }

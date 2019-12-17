@@ -1,10 +1,15 @@
 package decaf.frontend.scope;
 
-import decaf.frontend.symbol.*;
+import decaf.frontend.symbol.ClassSymbol;
+import decaf.frontend.symbol.LambdaSymbol;
+import decaf.frontend.symbol.MethodSymbol;
+import decaf.frontend.symbol.Symbol;
 import decaf.frontend.tree.Pos;
-import decaf.frontend.type.*;
 
-import java.util.*;
+import java.util.ListIterator;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Stack;
 import java.util.function.Predicate;
 
 /**
@@ -26,12 +31,12 @@ import java.util.function.Predicate;
  * @see Scope
  */
 public class ScopeStack {
+  private Stack<Scope> scopeStack = new Stack<>();
+  private Stack<Scope> lambdaScopeStack = new Stack<>();
+  private ClassSymbol currClass;
+  private MethodSymbol currMethod;
+  private LambdaSymbol currLambda;
 
-    private Stack<Scope> scopeStack = new Stack<>();
-    private Stack<LambdaSymbol> lambdaStack = new Stack<>();
-    private Stack<List<Type>> lambdaReturnTypeListStack = new Stack<>();
-    private ClassSymbol currClass;
-    private MethodSymbol currMethod;
     /**
      * The global scope.
      */
@@ -57,6 +62,7 @@ public class ScopeStack {
      * @return class symbol
      */
     public ClassSymbol currentClass() {
+        Objects.requireNonNull(currClass);
         return currClass;
     }
 
@@ -66,17 +72,8 @@ public class ScopeStack {
      * @return method symbol
      */
     public MethodSymbol currentMethod() {
+        Objects.requireNonNull(currMethod);
         return currMethod;
-    }
-
-    public LambdaSymbol currentLambda() {
-        if (lambdaStack.isEmpty()) return null;
-        return lambdaStack.peek();
-    }
-
-    public List<Type> currentLambdaReturnTypeList() {
-        if (lambdaReturnTypeListStack.isEmpty()) return null;
-        return lambdaReturnTypeListStack.peek();
     }
 
     /**
@@ -91,44 +88,20 @@ public class ScopeStack {
     public void open(Scope scope) {
         assert !scope.isGlobalScope();
         if (scope.isClassScope()) {
-            assert !currentScope().isFormalOrLocalOrLambdaScope();
+            assert !currentScope().isFormalOrLocalScope();
             var classScope = (ClassScope) scope;
             classScope.parentScope.ifPresent(this::open);
             currClass = classScope.getOwner();
         } else if (scope.isFormalScope()) {
             var formalScope = (FormalScope) scope;
+            lambdaScopeStack.push(scope);
             currMethod = formalScope.getOwner();
-        } else if (scope.isLambdaFormalScope()) {
-            var lambdaFormalScope = (LambdaFormalScope) scope;
-            lambdaStack.push(lambdaFormalScope.getOwner());
-            lambdaReturnTypeListStack.push(new ArrayList<Type>());
+        } else if(scope.isLambdaFormalScope()) {
+            lambdaScopeStack.push(scope);
         }
         scopeStack.push(scope);
     }
 
-    /**
-     * Close the current scope.
-     * <p>
-     * If the current scope is a class scope, then we must close this class and all super classes. Since the global
-     * scope is never pushed to the actual {@code scopeStack}, we need to pop all scopes!
-     * Otherwise, only pop the current scope.
-     */
-    public void close() {
-        assert !scopeStack.isEmpty();
-        Scope scope = scopeStack.pop();
-        if (scope.isClassScope()) {
-            while (!scopeStack.isEmpty()) {
-                scopeStack.pop();
-            }
-            currClass = null;
-        } else if (scope.isLambdaFormalScope()) {
-            lambdaStack.pop();
-            lambdaReturnTypeListStack.pop();
-        } else if (scope.isFormalScope()) {
-            currMethod = null;
-        }
-
-    }
 
     /**
      * Lookup a symbol by name. By saying "lookup", the user expects that the symbol is found.
@@ -149,7 +122,7 @@ public class ScopeStack {
      * @return innermost found symbol before {@code pos} (if any)
      */
     public Optional<Symbol> lookupBefore(String key, Pos pos) {
-        return findWhile(key, whatever -> true, s -> !(s.domain().isLocalScope() && s.pos.compareTo(pos) >= 0));
+        return findWhile(key, whatever -> true, s -> !((s.domain().isLocalScope() || s.domain().isLambdaLocalScope()) && s.pos.compareTo(pos) >= 0));
     }
 
     /**
@@ -166,8 +139,8 @@ public class ScopeStack {
      * @return innermost conflicting symbol (if any)
      */
     public Optional<Symbol> findConflict(String key) {
-        if (currentScope().isFormalOrLocalOrLambdaScope())
-            return findWhile(key, Scope::isFormalOrLocalOrLambdaScope, whatever -> true).or(() -> global.find(key));
+        if (currentScope().isFormalOrLocalScope())
+            return findWhile(key, Scope::isFormalOrLocalScope, whatever -> true).or(() -> global.find(key));
         return lookup(key);
     }
 
@@ -180,22 +153,18 @@ public class ScopeStack {
     public boolean containsClass(String key) {
         return global.containsKey(key);
     }
-
-    public boolean containsInCurrentLambdaFormalScope(String key) {
-        assert(currentScope().isLocalScope());
-        boolean contains = false;
-        ListIterator<Scope> iter = scopeStack.listIterator(scopeStack.size());
-        while (iter.hasPrevious()) {
-            var scope = iter.previous();
-            if (scope.isLambdaFormalScope()) {
-                if (scope.find(key).isPresent()) contains = true;
-                break;
-            } else {
-                if (scope.find(key).isPresent()) { contains = true; break; }
-            }
+    public LambdaSymbol currentLambda() {
+            Objects.requireNonNull(currLambda);
+            return currLambda;
         }
-        return contains;
-    }
+
+        public Scope currentLambdaScope() {
+            if (lambdaScopeStack.isEmpty()) {
+                return global;
+            }
+            return lambdaScopeStack.peek();
+        }
+
 
     /**
      * Lookup a class in the global scope.
@@ -206,6 +175,36 @@ public class ScopeStack {
     public Optional<ClassSymbol> lookupClass(String key) {
         return Optional.ofNullable(global.getClass(key));
     }
+    /**
+     * Close the current scope.
+     * <p>
+     * If the current scope is a class scope, then we must close this class and all super classes. Since the global
+     * scope is never pushed to the actual {@code scopeStack}, we need to pop all scopes!
+     * Otherwise, only pop the current scope.
+     */
+    public void close() {
+        assert !scopeStack.isEmpty();
+        Scope scope = scopeStack.pop();
+        if (scope.isClassScope()) {
+            while (!scopeStack.isEmpty()) {
+                scopeStack.pop();
+            }
+        }
+        if(scope.isFormalScope() || scope.isLambdaFormalScope()) {
+            lambdaScopeStack.pop();
+        }
+    }
+
+        private Optional<Symbol> findWhile(String key, Predicate<Scope> cond, Predicate<Symbol> validator) {
+            ListIterator<Scope> iter = scopeStack.listIterator(scopeStack.size());
+            while (iter.hasPrevious()) {
+                var scope = iter.previous();
+                if (!cond.test(scope)) return Optional.empty();
+                var symbol = scope.find(key);
+                if (symbol.isPresent() && validator.test(symbol.get())) return symbol;
+            }
+            return cond.test(global) ? global.find(key) : Optional.empty();
+        }
 
     /**
      * Get a class from global scope.
@@ -224,17 +223,12 @@ public class ScopeStack {
      * @see Scope#declare
      */
     public void declare(Symbol symbol) {
+        if(currentLambdaScope().isLambdaFormalScope()) {
+            symbol.setLambdaDomain(currentLambdaScope());
+        }
         currentScope().declare(symbol);
     }
 
-    private Optional<Symbol> findWhile(String key, Predicate<Scope> cond, Predicate<Symbol> validator) {
-        ListIterator<Scope> iter = scopeStack.listIterator(scopeStack.size());
-        while (iter.hasPrevious()) {
-            var scope = iter.previous();
-            if (!cond.test(scope)) return Optional.empty();
-            var symbol = scope.find(key);
-            if (symbol.isPresent() && validator.test(symbol.get())) return symbol;
-        }
-        return cond.test(global) ? global.find(key) : Optional.empty();
-    }
+
+
 }

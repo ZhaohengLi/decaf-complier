@@ -52,6 +52,12 @@ public class JaccParser extends Phase<InputStream, Tree.TopLevel> {
                 case Tokens.CLASS -> decaf.frontend.parsing.JaccTokens.CLASS;
                 case Tokens.NULL -> decaf.frontend.parsing.JaccTokens.NULL;
                 case Tokens.EXTENDS -> decaf.frontend.parsing.JaccTokens.EXTENDS;
+                case Tokens.EQUAL -> decaf.frontend.parsing.JaccTokens.EQUAL;
+                case Tokens.NOT_EQUAL -> decaf.frontend.parsing.JaccTokens.NOT_EQUAL;
+                case Tokens.ABSTRACT -> decaf.frontend.parsing.JaccTokens.ABSTRACT;
+                case Tokens.VAR -> decaf.frontend.parsing.JaccTokens.VAR;
+                case Tokens.FUN -> decaf.frontend.parsing.JaccTokens.FUN;
+                case Tokens.ARROW -> decaf.frontend.parsing.JaccTokens.ARROW;
                 case Tokens.THIS -> decaf.frontend.parsing.JaccTokens.THIS;
                 case Tokens.WHILE -> decaf.frontend.parsing.JaccTokens.WHILE;
                 case Tokens.FOR -> decaf.frontend.parsing.JaccTokens.FOR;
@@ -70,17 +76,10 @@ public class JaccParser extends Phase<InputStream, Tree.TopLevel> {
                 case Tokens.AND -> decaf.frontend.parsing.JaccTokens.AND;
                 case Tokens.OR -> decaf.frontend.parsing.JaccTokens.OR;
                 case Tokens.STATIC -> decaf.frontend.parsing.JaccTokens.STATIC;
-
-                case Tokens.ABSTRACT -> decaf.frontend.parsing.JaccTokens.ABSTRACT;
-                case Tokens.NONETYPE -> decaf.frontend.parsing.JaccTokens.NONETYPE;
-                case Tokens.FUN -> decaf.frontend.parsing.JaccTokens.FUN;
-                case Tokens.GOSETO -> decaf.frontend.parsing.JaccTokens.GOSETO;
-
                 case Tokens.INSTANCE_OF -> decaf.frontend.parsing.JaccTokens.INSTANCE_OF;
                 case Tokens.LESS_EQUAL -> decaf.frontend.parsing.JaccTokens.LESS_EQUAL;
                 case Tokens.GREATER_EQUAL -> decaf.frontend.parsing.JaccTokens.GREATER_EQUAL;
-                case Tokens.EQUAL -> decaf.frontend.parsing.JaccTokens.EQUAL;
-                case Tokens.NOT_EQUAL -> decaf.frontend.parsing.JaccTokens.NOT_EQUAL;
+
                 default -> code; // single-character, use their ASCII code!
             };
         }

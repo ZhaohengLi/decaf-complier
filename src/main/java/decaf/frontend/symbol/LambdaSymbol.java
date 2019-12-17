@@ -1,30 +1,43 @@
 package decaf.frontend.symbol;
 
-import decaf.frontend.scope.*;
-import decaf.frontend.tree.*;
-import decaf.frontend.type.*;
+import decaf.frontend.scope.ClassScope;
+import decaf.frontend.scope.LambdaFormalScope;
+import decaf.frontend.scope.Scope;
+import decaf.frontend.tree.Pos;
+import decaf.frontend.type.FunType;
+import decaf.frontend.type.Type;
 
 public final class LambdaSymbol extends Symbol {
 
-    public final FunType type;
-    public final LambdaFormalScope formalScope;
 
-    public LambdaSymbol(String name, FunType type, Pos pos, LambdaFormalScope formalScope){
-        super(name, type, pos);
-        this.type = type;
-        this.formalScope = formalScope;
-        formalScope.setOwner(this);
-    }
 
     @Override
     public boolean isLambdaSymbol() {
         return true;
     }
 
+    public final FunType funtype;
+    public final LambdaFormalScope lambdaFormalScope;
+    public Scope inScope;
+
+
+
+    @Override
+    public ClassScope domain() {
+      System.out.println("form symbol");
+        return (ClassScope) definedIn;
+    }
+
     @Override
     protected String str() {
-        String str = String.format("function %s : %s", name, type);
-        System.out.println(str);
-        return str;
+      System.out.println("form symbol");
+        return String.format("function %s : %s", name, funtype);
+    }
+
+    public LambdaSymbol(String name, FunType funtype, Pos pos, LambdaFormalScope lambdaFormalScope) {
+        super(name, funtype, pos);
+        this.funtype = funtype;
+        this.lambdaFormalScope = lambdaFormalScope;
+        lambdaFormalScope.setOwner(this);
     }
 }

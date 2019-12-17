@@ -3,63 +3,31 @@ package decaf.frontend.symbol;
 import decaf.frontend.scope.ClassScope;
 import decaf.frontend.scope.GlobalScope;
 import decaf.frontend.tree.Pos;
-import decaf.frontend.tree.Tree;
-import decaf.frontend.symbol.MethodSymbol;
 import decaf.frontend.type.ClassType;
 import decaf.lowlevel.tac.ClassInfo;
+import decaf.frontend.tree.Tree;
 
 import java.util.Optional;
 import java.util.TreeSet;
+import java.util.List;
 
 /**
  * Class symbol, representing a class definition.
  */
 public final class ClassSymbol extends Symbol {
-    public final Tree.Modifiers modifiers;
-    public TreeSet<String> abstractMethods;
 
     public final Optional<ClassSymbol> parentSymbol;
 
     public final ClassType type;
 
+    public final Tree.Modifiers modifiers;
+
+    public List<String> notOverride;
+
     /**
      * Associated class scope of this class.
      */
     public final ClassScope scope;
-
-    public ClassSymbol(String name, ClassType type, ClassScope scope, Pos pos, Tree.Modifiers modifiers) {
-        super(name, type, pos);
-        this.parentSymbol = Optional.empty();
-        this.scope = scope;
-        this.type = type;
-        this.modifiers = modifiers;
-        this.abstractMethods = new TreeSet<>();
-        scope.setOwner(this);
-    }
-
-    public ClassSymbol(String name, ClassSymbol parentSymbol, ClassType type, ClassScope scope, Pos pos, Tree.Modifiers modifiers) {
-        super(name, type, pos);
-        this.parentSymbol = Optional.of(parentSymbol);
-        this.scope = scope;
-        this.type = type;
-        this.modifiers = modifiers;
-        this.abstractMethods = new TreeSet<>();
-        scope.setOwner(this);
-    }
-
-    public boolean isAbstract(){
-        return modifiers.isAbstract();
-    }
-
-    @Override
-    public GlobalScope domain() {
-        return (GlobalScope) definedIn;
-    }
-
-    @Override
-    public boolean isClassSymbol() {
-        return true;
-    }
 
     /**
      * Set as main class, by {@link decaf.frontend.typecheck.Namer}.
@@ -77,25 +45,43 @@ public final class ClassSymbol extends Symbol {
         return main;
     }
 
-    @Override
-    protected String str() {
-        String str;
-        if (isAbstract()) str = "ABSTRACT class " + name + parentSymbol.map(classSymbol -> " : " + classSymbol.name).orElse("");
-        else str = "class " + name + parentSymbol.map(classSymbol -> " : " + classSymbol.name).orElse("");
-        System.out.println(str);
-        return str;
+    public boolean isAbstract() {
+      System.out.println("form symbol");
+        return modifiers.isAbstract();
+
     }
 
-    /**
-     * Get class info, required by tac generation.
-     *
-     * @return class info
-     * @see decaf.lowlevel.tac.ClassInfo
-     */
+    public ClassSymbol(String name, ClassType type, ClassScope scope, Pos pos, Tree.Modifiers modifiers) {
+        super(name, type, pos);
+        this.parentSymbol = Optional.empty();
+        System.out.println("form symbol");
+        this.scope = scope;
+        this.type = type;
+        this.modifiers = modifiers;
+        scope.setOwner(this);
+    }
+
+    public ClassSymbol(String name, ClassSymbol parentSymbol, ClassType type, ClassScope scope, Pos pos, Tree.Modifiers modifiers) {
+        super(name, type, pos);
+        this.parentSymbol = Optional.of(parentSymbol);
+        this.scope = scope;
+        this.type = type;
+        this.modifiers = modifiers;
+        scope.setOwner(this);
+    }
+
+    @Override
+    public GlobalScope domain() {
+        return (GlobalScope) definedIn;
+    }
+
     public ClassInfo getInfo() {
+      System.out.println("form symbol1");
         var memberVariables = new TreeSet<String>();
         var memberMethods = new TreeSet<String>();
         var staticMethods = new TreeSet<String>();
+        var abstractMethods = new TreeSet<String>();
+        System.out.println("form symbol");
 
         for (var symbol : scope) {
             if (symbol.isVarSymbol()) {
@@ -104,6 +90,8 @@ public final class ClassSymbol extends Symbol {
                 var methodSymbol = (MethodSymbol) symbol;
                 if (methodSymbol.isStatic()) {
                     staticMethods.add(methodSymbol.name);
+                } else if(methodSymbol.isAbstract()) {
+                    abstractMethods.add(methodSymbol.name);
                 } else {
                     memberMethods.add(methodSymbol.name);
                 }
@@ -111,8 +99,32 @@ public final class ClassSymbol extends Symbol {
         }
 
         return new ClassInfo(name, parentSymbol.map(symbol -> symbol.name), memberVariables, memberMethods,
-                staticMethods, isMainClass());
+                staticMethods,abstractMethods, isMainClass(), isAbstract());
     }
+
+    @Override
+    public boolean isClassSymbol() {
+      System.out.println("form symbol");
+        return true;
+    }
+
+
+
+    @Override
+    protected String str() {
+      System.out.println("form symbol");
+        if(isAbstract())
+            return "ABSTRACT class " + name + parentSymbol.map(classSymbol -> " : " + classSymbol.name).orElse("");
+        return "class " + name + parentSymbol.map(classSymbol -> " : " + classSymbol.name).orElse("");
+    }
+
+    /**
+     * Get class info, required by tac generation.
+     *
+     * @return class info
+     * @see decaf.lowlevel.tac.ClassInfo
+     */
+
 
     private boolean main;
 }

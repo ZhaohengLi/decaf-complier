@@ -5,12 +5,16 @@ import decaf.frontend.symbol.LambdaSymbol;
 public class LambdaFormalScope extends Scope {
 
     private LambdaSymbol owner;
-    private LocalScope nested;
+    public Scope nested;
 
-    public LambdaFormalScope(Scope parent) {
+    public LambdaFormalScope(Scope scope) {
         super(Kind.LAMBDAFORMAL);
-        assert parent.isLocalScope();
-        ((LocalScope) parent).nested.add(this);
+        if(scope.isLambdaFormalScope())
+            ((LambdaFormalScope)scope).setNested(this);
+        else if(scope.isLambdaLocalScope())
+            ((LambdaLocalScope)scope).nested.add(this);
+        else
+            ((LocalScope)scope).nested.add(this);
     }
 
     public LambdaSymbol getOwner() {
@@ -26,11 +30,11 @@ public class LambdaFormalScope extends Scope {
         return true;
     }
 
-    public LocalScope nestedLocalScope() {
+    public Scope nestedLambdaLocalScope() {
         return nested;
     }
 
-    void setNested(LocalScope scope) {
+    public void setNested(Scope scope) {
         nested = scope;
     }
 }

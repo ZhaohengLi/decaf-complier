@@ -33,6 +33,7 @@ public interface TacEmitter extends Visitor<FuncVisitor> {
 
     Stack<Tree.Lambda> lambdaStack = new Stack<>();
     Stack<Label> loopExits = new Stack<>();
+    Stack<Label> loopExitsWx = new Stack<>();
 
     @Override
     default void visitLambda(Tree.Lambda expr, FuncVisitor mv) {
@@ -92,17 +93,7 @@ public interface TacEmitter extends Visitor<FuncVisitor> {
         expr.val = allocation;
     }
 
-    @Override
-    default void visitClassTest(Tree.ClassTest expr, FuncVisitor mv) {
-        // Accelerate: when obj.type <: class.type, then the test must be successful!
-        if (expr.obj.type.subtypeOf(expr.symbol.type)) {
-            expr.val = mv.visitLoad(1);
-            return;
-        }
 
-        expr.obj.accept(this, mv);
-        expr.val = emitClassTest(expr.obj.val, expr.symbol.name, mv);
-    }
 
     @Override
     default void visitBlock(Tree.Block block, FuncVisitor mv) {
@@ -243,6 +234,17 @@ public interface TacEmitter extends Visitor<FuncVisitor> {
     @Override
     default void visitReadInt(Tree.ReadInt expr, FuncVisitor mv) {
         expr.val = mv.visitIntrinsicCall(Intrinsic.READ_INT, true);
+    }
+    @Override
+    default void visitClassTest(Tree.ClassTest expr, FuncVisitor mv) {
+        // Accelerate: when obj.type <: class.type, then the test must be successful!
+        if (expr.obj.type.subtypeOf(expr.symbol.type)) {
+            expr.val = mv.visitLoad(1);
+            return;
+        }
+
+        expr.obj.accept(this, mv);
+        expr.val = emitClassTest(expr.obj.val, expr.symbol.name, mv);
     }
 
     @Override
