@@ -7,7 +7,7 @@ import java.util.List;
  */
 public final class FunType extends Type {
 
-    public Type returnType;//lambda表达式中需要后确定返回值 故去掉final关键字
+    public final Type returnType;
 
     public final List<Type> argTypes;
 

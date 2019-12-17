@@ -1,11 +1,15 @@
 package decaf.frontend.typecheck;
 
 import decaf.driver.ErrorIssuer;
-import decaf.driver.error.*;
+import decaf.driver.error.BadArrElementError;
+import decaf.driver.error.ClassNotFoundError;
+import decaf.driver.error.VoidArgError;
 import decaf.frontend.scope.ScopeStack;
 import decaf.frontend.tree.Tree;
 import decaf.frontend.tree.Visitor;
-import decaf.frontend.type.*;
+import decaf.frontend.type.BuiltInType;
+import decaf.frontend.type.FunType;
+import decaf.frontend.type.Type;
 
 import java.util.ArrayList;
 
@@ -16,6 +20,29 @@ import java.util.ArrayList;
  */
 public interface TypeLitVisited extends Visitor<ScopeStack>, ErrorIssuer {
 
+      @Override
+      default void visitTLambda(Tree.TLambda typeLambda, ScopeStack ctx) {
+          var typeList = new ArrayList<Type>();
+          var err = false;
+          typeLambda.mytype.accept(this, ctx);
+          if(typeLambda.mytype.type.eq(BuiltInType.ERROR))
+              typeLambda.type = BuiltInType.ERROR;
+          for(var ty : typeLambda.typelist) {
+              ty.accept(this, ctx);
+              if(ty.type.eq(BuiltInType.VOID)) {
+                  err = true;
+                  typeLambda.type = BuiltInType.ERROR;
+                  issue(new VoidArgError(ty.pos));
+              } else if(ty.type.eq(BuiltInType.ERROR)) {
+                  err = true;
+                  typeLambda.type = BuiltInType.ERROR;
+              } else {
+                  typeList.add(ty.type);
+              }
+          }
+          if(!err)
+              typeLambda.type = new FunType(typeLambda.mytype.type, typeList);
+      }
     // visiting types
     @Override
     default void visitTInt(Tree.TInt that, ScopeStack ctx) {
@@ -59,20 +86,6 @@ public interface TypeLitVisited extends Visitor<ScopeStack>, ErrorIssuer {
         } else {
             typeArray.type = new decaf.frontend.type.ArrayType(typeArray.elemType.type);
         }
-    }
-
-    @Override
-    default void visitTLambda(Tree.TLambda that, ScopeStack ctx) {
-        that.returnType.accept(this, ctx);
-        var argTypes = new ArrayList<Type>();
-        for (var param : that.paramsType) {
-            param.accept(this, ctx);
-            argTypes.add(param.type);
-            if (param.type.eq(BuiltInType.VOID)) {
-                issue(new MyFunTypeError1(param.pos));
-            }
-        }
-        that.type = new FunType(that.returnType.type, argTypes);
     }
 
 }

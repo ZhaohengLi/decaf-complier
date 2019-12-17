@@ -26,11 +26,7 @@ public interface Visitor<C> {
         visitOthers(that, ctx);
     }
 
-    default void visitTInt(Tree.TInt that, C ctx) {
-        visitOthers(that, ctx);
-    }
-
-    default void visitTBool(Tree.TBool that, C ctx) {
+    default void visitLambda(Tree.Lambda that, C ctx) {
         visitOthers(that, ctx);
     }
 
@@ -38,7 +34,11 @@ public interface Visitor<C> {
         visitOthers(that, ctx);
     }
 
-    default void visitLambda(Tree.Lambda that, C ctx) {
+    default void visitTInt(Tree.TInt that, C ctx) {
+        visitOthers(that, ctx);
+    }
+
+    default void visitTBool(Tree.TBool that, C ctx) {
         visitOthers(that, ctx);
     }
 
@@ -71,7 +71,6 @@ public interface Visitor<C> {
     }
 
     default void visitExprEval(Tree.ExprEval that, C ctx) {
-        //System.out.println("Default visitExprEval");
         visitOthers(that, ctx);
     }
 
@@ -103,6 +102,10 @@ public interface Visitor<C> {
         visitOthers(that, ctx);
     }
 
+    default void visitIndexSel(Tree.IndexSel that, C ctx) {
+        visitOthers(that, ctx);
+    }
+
     default void visitIntLit(Tree.IntLit that, C ctx) {
         visitOthers(that, ctx);
     }
@@ -120,10 +123,6 @@ public interface Visitor<C> {
     }
 
     default void visitVarSel(Tree.VarSel that, C ctx) {
-        visitOthers(that, ctx);
-    }
-
-    default void visitIndexSel(Tree.IndexSel that, C ctx) {
         visitOthers(that, ctx);
     }
 
@@ -169,8 +168,6 @@ public interface Visitor<C> {
 
     /* The default handler */
     default void visitOthers(TreeNode that, C ctx) {
-        //System.out.println("visitOthers");
-
         // do nothing
     }
 }
