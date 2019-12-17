@@ -233,13 +233,19 @@ public interface TacEmitter extends Visitor<FuncVisitor> {
         };
         expr.lhs.accept(this, mv);
         expr.rhs.accept(this, mv);
-
-        if ((op == TacInstr.Binary.Op.DIV || op == TacInstr.Binary.Op.MOD)&& expr.rhs instanceof Tree.IntLit && ((Tree.IntLit)expr.rhs).value == 0) {
-          mv.visitPrint(RuntimeError.DIV_BY_ZERO_ERROR);
-          mv.visitIntrinsicCall(Intrinsic.HALT);
-        } else {
-          expr.val = mv.visitBinary(op, expr.lhs.val, expr.rhs.val);
+        if(expr.op.equals(Tree.BinaryOp.DIV) || expr.op.equals(Tree.BinaryOp.MOD)) {
+            var z = mv.visitLoad(0);
+            var err = mv.visitBinary(TacInstr.Binary.Op.EQU, expr.rhs.val, z);
+            var h = new Consumer<FuncVisitor>() {
+                @Override
+                public void accept(FuncVisitor v){
+                    v.visitPrint(RuntimeError.DIV_BY_ZERO_ERROR);
+                    v.visitIntrinsicCall(Intrinsic.HALT);
+                }
+            };
+            emitIfThen(err, h, mv);
         }
+        expr.val = mv.visitBinary(op, expr.lhs.val, expr.rhs.val);
     }
 
 
