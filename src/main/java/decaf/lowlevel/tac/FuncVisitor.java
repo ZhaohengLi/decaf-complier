@@ -3,7 +3,6 @@ package decaf.lowlevel.tac;
 import decaf.lowlevel.instr.Temp;
 import decaf.lowlevel.label.FuncLabel;
 import decaf.lowlevel.label.Label;
-import decaf.frontend.tree.Tree;
 
 import java.util.List;
 
@@ -11,112 +10,6 @@ import java.util.List;
  * Append instructions to a TAC function.
  */
 public class FuncVisitor {
-
-  private ProgramWriter pw;
-
-  public boolean isLambda = false;
-
-  public Tree.Lambda Lambda;
-
-  public boolean isStatic = true;
-
-  private TacFunc func;
-
-  private ProgramWriter.Context ctx;
-
-  private int nextTempId = 0;
-
-  private Temp[] argsTemps;
-
-  /**
-   * @see #visitStaticCall(String, String, List, boolean)
-   */
-  public void visitStaticCall(String clazz, String method, List<Temp> args) {
-      visitStaticCall(clazz, method, args, false);
-  }
-
-  /**
-   * Append instructions to invoke an intrinsic method.
-   *
-   * @param func       intrinsic function
-   * @param needReturn do we need a fresh temp to store the return value? (default false)
-   * @param args       argument temps
-   * @return the fresh temp if we need return (or else null)
-   */
-  public Temp visitIntrinsicCall(Intrinsic func, boolean needReturn, Temp... args) {
-      Temp temp = null;
-
-      for (var arg : args) {
-          this.func.add(new TacInstr.Parm(arg));
-      }
-      if (needReturn) {
-          temp = freshTemp();
-          this.func.add(new TacInstr.DirectCall(temp, func));
-      } else {
-          this.func.add(new TacInstr.DirectCall(func));
-      }
-      return temp;
-  }
-
-  /**
-   * @see #visitIntrinsicCall(Intrinsic, boolean, Temp...)
-   */
-  public void visitIntrinsicCall(Intrinsic func, Temp... args) {
-      visitIntrinsicCall(func, false, args);
-  }
-
-  /**
-   * Append an instruction to print a string.
-   *
-   * @param str string
-   */
-  public void visitPrint(String str) {
-      visitIntrinsicCall(Intrinsic.PRINT_STRING, visitLoad(str));
-  }
-
-  /**
-   * Append an instruction to load value from memory.
-   *
-   * @param base   base address temp
-   * @param offset offset (default = 0)
-   * @return a fresh temp as destination
-   */
-  public Temp visitLoadFrom(Temp base, int offset) {
-      var temp = freshTemp();
-      func.add(new TacInstr.Memory(TacInstr.Memory.Op.LOAD, temp, base, offset));
-      return temp;
-  }
-
-  /**
-   * @see #visitLoadFrom(Temp, int)
-   */
-  public Temp visitLoadFrom(Temp base) {
-      return visitLoadFrom(base, 0);
-  }
-
-  public Temp visitVarSel(String clazz,String method,boolean ret,int argnum) {
-      Temp t = null;
-
-      var point = visitLoadFrom(argsTemps[0], 4);
-      func.add(new TacInstr.Parm(point));
-
-      var v = visitLoadFrom(point);
-      var inTo = visitLoadFrom(v, ctx.getOffset(clazz, method));
-
-      for(int i = 1;i<argnum;i++) {
-          func.add(new TacInstr.Parm(argsTemps[i]));
-      }
-
-      if(ret) {
-          t = freshTemp();
-          func.add(new TacInstr.IndirectCall(t, inTo));
-          visitReturn(t);
-      } else {
-          func.add(new TacInstr.IndirectCall(inTo));
-          visitReturn();
-      }
-         return t;
-  }
     /**
      * Append {@link TacInstr.Assign}.
      *
@@ -139,22 +32,6 @@ public class FuncVisitor {
         return temp;
     }
 
-    public Temp visitVarSelStatic(String clazz, String method,boolean ret, int paramnum) {
-        Temp t = null;
-        var in = ctx.getFuncLabel(clazz,method);
-        for(int i = 1;i < paramnum;i++) {
-            func.add(new TacInstr.Parm(argsTemps[i]));
-        }
-        if(ret) {
-            t = freshTemp();
-            func.add(new TacInstr.DirectCall(t, in));
-            visitReturn(t);
-        } else {
-            func.add(new TacInstr.DirectCall(in));
-            visitReturn();
-        }
-        return t;
-    }
     /**
      * Append {@link TacInstr.LoadImm4}.
      *
@@ -339,8 +216,6 @@ public class FuncVisitor {
         return temp;
     }
 
-
-
     /**
      * @see #visitMemberCall(Temp, String, String, List, boolean)
      */
@@ -373,7 +248,71 @@ public class FuncVisitor {
         return temp;
     }
 
+    /**
+     * @see #visitStaticCall(String, String, List, boolean)
+     */
+    public void visitStaticCall(String clazz, String method, List<Temp> args) {
+        visitStaticCall(clazz, method, args, false);
+    }
 
+    /**
+     * Append instructions to invoke an intrinsic method.
+     *
+     * @param func       intrinsic function
+     * @param needReturn do we need a fresh temp to store the return value? (default false)
+     * @param args       argument temps
+     * @return the fresh temp if we need return (or else null)
+     */
+    public Temp visitIntrinsicCall(Intrinsic func, boolean needReturn, Temp... args) {
+        Temp temp = null;
+
+        for (var arg : args) {
+            this.func.add(new TacInstr.Parm(arg));
+        }
+        if (needReturn) {
+            temp = freshTemp();
+            this.func.add(new TacInstr.DirectCall(temp, func));
+        } else {
+            this.func.add(new TacInstr.DirectCall(func));
+        }
+        return temp;
+    }
+
+    /**
+     * @see #visitIntrinsicCall(Intrinsic, boolean, Temp...)
+     */
+    public void visitIntrinsicCall(Intrinsic func, Temp... args) {
+        visitIntrinsicCall(func, false, args);
+    }
+
+    /**
+     * Append an instruction to print a string.
+     *
+     * @param str string
+     */
+    public void visitPrint(String str) {
+        visitIntrinsicCall(Intrinsic.PRINT_STRING, visitLoad(str));
+    }
+
+    /**
+     * Append an instruction to load value from memory.
+     *
+     * @param base   base address temp
+     * @param offset offset (default = 0)
+     * @return a fresh temp as destination
+     */
+    public Temp visitLoadFrom(Temp base, int offset) {
+        var temp = freshTemp();
+        func.add(new TacInstr.Memory(TacInstr.Memory.Op.LOAD, temp, base, offset));
+        return temp;
+    }
+
+    /**
+     * @see #visitLoadFrom(Temp, int)
+     */
+    public Temp visitLoadFrom(Temp base) {
+        return visitLoadFrom(base, 0);
+    }
 
     /**
      * Append an instruction to store value to memory.
@@ -474,8 +413,7 @@ public class FuncVisitor {
         return nextTempId;
     }
 
-    FuncVisitor(FuncLabel entry, int numArgs, ProgramWriter.Context ctx, ProgramWriter pw) {
-        this.pw = pw;
+    FuncVisitor(FuncLabel entry, int numArgs, ProgramWriter.Context ctx) {
         this.ctx = ctx;
         func = new TacFunc(entry, numArgs);
         visitLabel(entry);
@@ -485,32 +423,11 @@ public class FuncVisitor {
         }
     }
 
+    private TacFunc func;
 
+    private ProgramWriter.Context ctx;
 
+    private int nextTempId = 0;
 
-    public Temp visitFuncCall(Temp fun, String method, List<Temp> args, boolean ret) {
-        Temp t = null;
-        var in = visitLoadFrom(fun, 0);
-        func.add(new TacInstr.Parm(fun));
-        for (var arg : args) {
-            func.add(new TacInstr.Parm(arg));
-        }
-        if(ret) {
-            t = freshTemp();
-            func.add(new TacInstr.IndirectCall(t, in));
-        } else {
-            func.add(new TacInstr.IndirectCall(in));
-        }
-        return t;
-    }
-
-    public void visitFuncCall(Temp func, String method, List<Temp> args) {
-        visitFuncCall(func, method, args, false);
-    }
-
-    public ProgramWriter getProgramWriter(){
-        return pw;
-    }
-
-
+    private Temp[] argsTemps;
 }

@@ -1,7 +1,6 @@
 package decaf.frontend.scope;
 
 import decaf.frontend.symbol.ClassSymbol;
-import decaf.frontend.symbol.LambdaSymbol;
 import decaf.frontend.symbol.MethodSymbol;
 import decaf.frontend.symbol.Symbol;
 import decaf.frontend.tree.Pos;
@@ -31,11 +30,6 @@ import java.util.function.Predicate;
  * @see Scope
  */
 public class ScopeStack {
-  private Stack<Scope> scopeStack = new Stack<>();
-  private Stack<Scope> lambdaScopeStack = new Stack<>();
-  private ClassSymbol currClass;
-  private MethodSymbol currMethod;
-  private LambdaSymbol currLambda;
 
     /**
      * The global scope.
@@ -94,14 +88,27 @@ public class ScopeStack {
             currClass = classScope.getOwner();
         } else if (scope.isFormalScope()) {
             var formalScope = (FormalScope) scope;
-            lambdaScopeStack.push(scope);
             currMethod = formalScope.getOwner();
-        } else if(scope.isLambdaFormalScope()) {
-            lambdaScopeStack.push(scope);
         }
         scopeStack.push(scope);
     }
 
+    /**
+     * Close the current scope.
+     * <p>
+     * If the current scope is a class scope, then we must close this class and all super classes. Since the global
+     * scope is never pushed to the actual {@code scopeStack}, we need to pop all scopes!
+     * Otherwise, only pop the current scope.
+     */
+    public void close() {
+        assert !scopeStack.isEmpty();
+        Scope scope = scopeStack.pop();
+        if (scope.isClassScope()) {
+            while (!scopeStack.isEmpty()) {
+                scopeStack.pop();
+            }
+        }
+    }
 
     /**
      * Lookup a symbol by name. By saying "lookup", the user expects that the symbol is found.
@@ -122,7 +129,7 @@ public class ScopeStack {
      * @return innermost found symbol before {@code pos} (if any)
      */
     public Optional<Symbol> lookupBefore(String key, Pos pos) {
-        return findWhile(key, whatever -> true, s -> !((s.domain().isLocalScope() || s.domain().isLambdaLocalScope()) && s.pos.compareTo(pos) >= 0));
+        return findWhile(key, whatever -> true, s -> !(s.domain().isLocalScope() && s.pos.compareTo(pos) >= 0));
     }
 
     /**
@@ -153,18 +160,6 @@ public class ScopeStack {
     public boolean containsClass(String key) {
         return global.containsKey(key);
     }
-    public LambdaSymbol currentLambda() {
-            Objects.requireNonNull(currLambda);
-            return currLambda;
-        }
-
-        public Scope currentLambdaScope() {
-            if (lambdaScopeStack.isEmpty()) {
-                return global;
-            }
-            return lambdaScopeStack.peek();
-        }
-
 
     /**
      * Lookup a class in the global scope.
@@ -175,36 +170,6 @@ public class ScopeStack {
     public Optional<ClassSymbol> lookupClass(String key) {
         return Optional.ofNullable(global.getClass(key));
     }
-    /**
-     * Close the current scope.
-     * <p>
-     * If the current scope is a class scope, then we must close this class and all super classes. Since the global
-     * scope is never pushed to the actual {@code scopeStack}, we need to pop all scopes!
-     * Otherwise, only pop the current scope.
-     */
-    public void close() {
-        assert !scopeStack.isEmpty();
-        Scope scope = scopeStack.pop();
-        if (scope.isClassScope()) {
-            while (!scopeStack.isEmpty()) {
-                scopeStack.pop();
-            }
-        }
-        if(scope.isFormalScope() || scope.isLambdaFormalScope()) {
-            lambdaScopeStack.pop();
-        }
-    }
-
-        private Optional<Symbol> findWhile(String key, Predicate<Scope> cond, Predicate<Symbol> validator) {
-            ListIterator<Scope> iter = scopeStack.listIterator(scopeStack.size());
-            while (iter.hasPrevious()) {
-                var scope = iter.previous();
-                if (!cond.test(scope)) return Optional.empty();
-                var symbol = scope.find(key);
-                if (symbol.isPresent() && validator.test(symbol.get())) return symbol;
-            }
-            return cond.test(global) ? global.find(key) : Optional.empty();
-        }
 
     /**
      * Get a class from global scope.
@@ -223,12 +188,21 @@ public class ScopeStack {
      * @see Scope#declare
      */
     public void declare(Symbol symbol) {
-        if(currentLambdaScope().isLambdaFormalScope()) {
-            symbol.setLambdaDomain(currentLambdaScope());
-        }
         currentScope().declare(symbol);
     }
 
+    private Stack<Scope> scopeStack = new Stack<>();
+    private ClassSymbol currClass;
+    private MethodSymbol currMethod;
 
-
+    private Optional<Symbol> findWhile(String key, Predicate<Scope> cond, Predicate<Symbol> validator) {
+        ListIterator<Scope> iter = scopeStack.listIterator(scopeStack.size());
+        while (iter.hasPrevious()) {
+            var scope = iter.previous();
+            if (!cond.test(scope)) return Optional.empty();
+            var symbol = scope.find(key);
+            if (symbol.isPresent() && validator.test(symbol.get())) return symbol;
+        }
+        return cond.test(global) ? global.find(key) : Optional.empty();
+    }
 }

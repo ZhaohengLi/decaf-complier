@@ -16,11 +16,7 @@ public class TacGen extends Phase<Tree.TopLevel, TacProg> implements TacEmitter 
 
     public TacGen(Config config) {
         super("tacgen", config);
-        System.out.println("form tac");
-        int flag = 1;
     }
-
-    
 
     @Override
     public TacProg transform(Tree.TopLevel tree) {
@@ -28,10 +24,8 @@ public class TacGen extends Phase<Tree.TopLevel, TacProg> implements TacEmitter 
         var info = new ArrayList<ClassInfo>();
         for (var clazz : tree.classes) {
             info.add(clazz.symbol.getInfo());
-            System.out.println("form tac");
         }
         var pw = new ProgramWriter(info);
-        System.out.println("form tac");
 
         // Step 1: create virtual tables.
         pw.visitVTables();
@@ -48,7 +42,6 @@ public class TacGen extends Phase<Tree.TopLevel, TacProg> implements TacEmitter 
                     var i = 0;
                     if (!method.isStatic()) {
                         numArgs++;
-                        int flag = 9;
                         i++;
                     }
 
@@ -56,12 +49,11 @@ public class TacGen extends Phase<Tree.TopLevel, TacProg> implements TacEmitter 
                     for (var param : method.params) {
                         param.symbol.temp = mv.getArgTemp(i);
                         i++;
-                        System.out.println("form tac");
                     }
                 }
-                if(!method.isAbstract()) { method.body.get().accept(this, mv); }
+
+                method.body.accept(this, mv);
                 mv.visitEnd();
-                int cnt = 1;
             }
         }
 
@@ -77,16 +69,13 @@ public class TacGen extends Phase<Tree.TopLevel, TacProg> implements TacEmitter 
                 var printer = new PrintWriter(path.toFile());
                 program.printTo(printer);
                 printer.close();
-                System.out.println("form tac");
             } catch (FileNotFoundException e) {
                 e.printStackTrace();
-                int cnt =2;
             }
 
             // and then execute it using our simulator.
             var simulator = new Simulator(System.in, config.output);
             simulator.execute(program);
-            System.out.println("form tac");
         }
     }
 }

@@ -50,26 +50,23 @@ BAD_ESC             = "\\"[^nrt\"\\]
 "void"              { return keyword(Tokens.VOID);         }
 "int"               { return keyword(Tokens.INT);          }
 "bool"              { return keyword(Tokens.BOOL);         }
-"while"             { return keyword(Tokens.WHILE);        }
-"for"               { return keyword(Tokens.FOR);          }
-"if"                { return keyword(Tokens.IF);           }
-"else"              { return keyword(Tokens.ELSE);         }
-"return"            { return keyword(Tokens.RETURN);       }
-"var"               { return keyword(Tokens.VAR);          }
-"fun"               { return keyword(Tokens.FUN);          }
-"break"             { return keyword(Tokens.BREAK);        }
-"Print"             { return keyword(Tokens.PRINT);        }
-"ReadInteger"       { return keyword(Tokens.READ_INTEGER); }
-"ReadLine"          { return keyword(Tokens.READ_LINE);    }
-"static"            { return keyword(Tokens.STATIC);       }
-"instanceof"        { return keyword(Tokens.INSTANCE_OF);  }
-"abstract"          { return keyword(Tokens.ABSTRACT);     }
 "string"            { return keyword(Tokens.STRING);       }
 "new"               { return keyword(Tokens.NEW);          }
 "null"              { return keyword(Tokens.NULL);         }
 "class"             { return keyword(Tokens.CLASS);        }
 "extends"           { return keyword(Tokens.EXTENDS);      }
 "this"              { return keyword(Tokens.THIS);         }
+"while"             { return keyword(Tokens.WHILE);        }
+"for"               { return keyword(Tokens.FOR);          }
+"if"                { return keyword(Tokens.IF);           }
+"else"              { return keyword(Tokens.ELSE);         }
+"return"            { return keyword(Tokens.RETURN);       }
+"break"             { return keyword(Tokens.BREAK);        }
+"Print"             { return keyword(Tokens.PRINT);        }
+"ReadInteger"       { return keyword(Tokens.READ_INTEGER); }
+"ReadLine"          { return keyword(Tokens.READ_LINE);    }
+"static"            { return keyword(Tokens.STATIC);       }
+"instanceof"        { return keyword(Tokens.INSTANCE_OF);  }
 
     // operators, with more than one character
 "<="                { return operator(Tokens.LESS_EQUAL);    }
@@ -78,7 +75,6 @@ BAD_ESC             = "\\"[^nrt\"\\]
 "!="                { return operator(Tokens.NOT_EQUAL);     }
 "&&"                { return operator(Tokens.AND);           }
 "||"                { return operator(Tokens.OR);            }
-"=>"                { return operator(Tokens.ARROW);         }
 {SIMPLE_OPERATOR}   { return operator((int) yycharat(0));    }
 
     // literals

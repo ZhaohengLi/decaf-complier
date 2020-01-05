@@ -3,7 +3,6 @@ package decaf.frontend.symbol;
 import decaf.frontend.scope.Scope;
 import decaf.frontend.tree.Pos;
 import decaf.frontend.type.Type;
-import decaf.frontend.scope.LambdaFormalScope;
 
 /**
  * Symbols.
@@ -21,38 +20,9 @@ public abstract class Symbol implements Comparable<Symbol> {
 
     public final String name;
 
-    public Type type;
+    public final Type type;
 
-
-        /**
-         * Get string representation of a symbol, excluding the position.
-         *
-         * @return string representation
-         */
-        protected abstract String str();
-
-        @Override
-        public String toString() {
-            return pos + " -> " + str();
-        }
-
-        Scope definedIn;
-
-        /**
-         * Two symbols are compared by their positions.
-         *
-         * @param that another symbol
-         * @return comparing result
-         */
-        @Override
-        public int compareTo(Symbol that) {
-          System.out.println("form symbol");
-            return this.pos.compareTo(that.pos);
-        }
-
-            public final Pos pos;
-
-            public Scope lambdaFormalScope;
+    public final Pos pos;
 
     Symbol(String name, Type type, Pos pos) {
         this.name = name;
@@ -68,17 +38,6 @@ public abstract class Symbol implements Comparable<Symbol> {
     public Scope domain() {
         return definedIn;
     }
-
-    public void setLambdaDomain(Scope lambdaFormalScope) {
-      System.out.println("form symbol");
-        this.lambdaFormalScope = lambdaFormalScope;
-    }
-
-
-    public Scope lambdaDomain() {
-        return lambdaFormalScope;
-    }
-
 
     public void setDomain(Scope scope) {
         this.definedIn = scope;
@@ -96,9 +55,28 @@ public abstract class Symbol implements Comparable<Symbol> {
         return false;
     }
 
-    public boolean isLambdaSymbol() {
-        return false;
+    /**
+     * Get string representation of a symbol, excluding the position.
+     *
+     * @return string representation
+     */
+    protected abstract String str();
+
+    @Override
+    public String toString() {
+        return pos + " -> " + str();
     }
 
+    Scope definedIn;
 
+    /**
+     * Two symbols are compared by their positions.
+     *
+     * @param that another symbol
+     * @return comparing result
+     */
+    @Override
+    public int compareTo(Symbol that) {
+        return this.pos.compareTo(that.pos);
+    }
 }

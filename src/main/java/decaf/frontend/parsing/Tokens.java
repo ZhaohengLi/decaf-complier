@@ -21,12 +21,6 @@ public interface Tokens {
     int BREAK = 14;
     int NEW = 15;
     int PRINT = 16;
-    int EQUAL = 29;
-    int NOT_EQUAL = 30;
-    int ABSTRACT = 31;
-    int VAR = 32;
-    int FUN = 34;
-    int ARROW = 35;
     int READ_INTEGER = 17;
     int READ_LINE = 18;
     int BOOL_LIT = 19;
@@ -39,7 +33,8 @@ public interface Tokens {
     int INSTANCE_OF = 26;
     int LESS_EQUAL = 27;
     int GREATER_EQUAL = 28;
-
+    int EQUAL = 29;
+    int NOT_EQUAL = 30;
 
     // MUST use ASCII code to encode a single-character token.
     // '!' (code=33)

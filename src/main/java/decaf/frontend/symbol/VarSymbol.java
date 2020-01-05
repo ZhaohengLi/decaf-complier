@@ -12,28 +12,6 @@ import decaf.lowlevel.instr.Temp;
  */
 public final class VarSymbol extends Symbol {
 
-  public boolean isMemberVar() {
-      return definedIn.isClassScope();
-  }
-
-  /**
-   * Get the owner of a member variable, which is a class symbol.
-   *
-   * @return owner
-   * @throws IllegalArgumentException if this is not a member variable
-   */
-  public ClassSymbol getOwner() {
-      if (!isMemberVar()) {
-          throw new IllegalArgumentException("this var symbol is not a member var");
-      }
-      return ((ClassScope) definedIn).getOwner();
-  }
-
-  /**
-   * Temp, reserved for {@link decaf.frontend.tacgen.TacGen}.
-   */
-  public Temp temp;
-
     public VarSymbol(String name, Type type, Pos pos) {
         super(name, type, pos);
     }
@@ -49,14 +27,6 @@ public final class VarSymbol extends Symbol {
         return new VarSymbol("this", type, pos);
     }
 
-    public boolean isLocalVar() {
-        return definedIn.isLocalScope();
-    }
-
-    public boolean isParam() {
-        return definedIn.isFormalScope() || definedIn.isLambdaFormalScope();
-    }
-
     @Override
     public boolean isVarSymbol() {
         return true;
@@ -67,7 +37,33 @@ public final class VarSymbol extends Symbol {
         return String.format("variable %s%s : %s", isParam() ? "@" : "", name, type);
     }
 
+    public boolean isLocalVar() {
+        return definedIn.isLocalScope();
+    }
 
+    public boolean isParam() {
+        return definedIn.isFormalScope();
+    }
 
+    public boolean isMemberVar() {
+        return definedIn.isClassScope();
+    }
 
+    /**
+     * Get the owner of a member variable, which is a class symbol.
+     *
+     * @return owner
+     * @throws IllegalArgumentException if this is not a member variable
+     */
+    public ClassSymbol getOwner() {
+        if (!isMemberVar()) {
+            throw new IllegalArgumentException("this var symbol is not a member var");
+        }
+        return ((ClassScope) definedIn).getOwner();
+    }
+
+    /**
+     * Temp, reserved for {@link decaf.frontend.tacgen.TacGen}.
+     */
+    public Temp temp;
 }
