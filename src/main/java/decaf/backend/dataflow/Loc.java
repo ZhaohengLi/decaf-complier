@@ -12,6 +12,8 @@ public class Loc<I extends PseudoInstr> {
     public final I instr;
     public Set<Temp> liveIn;
     public Set<Temp> liveOut;
+    public I modifiedTacInstr = null;
+    public boolean modified = false;
 
     Loc(I instr) {
         this.instr = instr;

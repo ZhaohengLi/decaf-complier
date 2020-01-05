@@ -1,6 +1,7 @@
 package decaf.backend.dataflow;
 
-import decaf.lowlevel.instr.PseudoInstr;
+import decaf.lowlevel.instr.*;
+import decaf.lowlevel.tac.TacInstr;
 
 import java.util.TreeSet;
 import java.util.function.Consumer;
@@ -87,15 +88,28 @@ public class LivenessAnalyzer<I extends PseudoInstr> implements Consumer<CFG<I>>
     private void analyzeLivenessForEachLocIn(BasicBlock<I> bb) {
         var liveOut = new TreeSet<>(bb.liveOut);
         var it = bb.backwardIterator();
+
         while (it.hasNext()) {
+            boolean useful = false;
             var loc = it.next();
             loc.liveOut = new TreeSet<>(liveOut);
-            // Order is important here, because in an instruction, one temp can be both read and written, e.g.
-            // in `_T1 = _T1 + _T2`, `_T1` must be alive before execution.
+
+            if (loc.instr.dsts.length != 0) {
+              for (var w : loc.instr.getWritten()) if (loc.liveOut.contains(w)) { useful = true; break; }
+            } else { useful = true;}
+
+            if (!useful) {
+              loc.modified = true;
+              if (loc.instr instanceof TacInstr.DirectCall || loc.instr instanceof TacInstr.IndirectCall) {
+                loc.instr.dsts = new Temp[]{};
+                loc.modified = false;
+                useful = true;
+              }
+            }
+
             liveOut.removeAll(loc.instr.getWritten());
-            liveOut.addAll(loc.instr.getRead());
+            if (useful) liveOut.addAll(loc.instr.getRead());
             loc.liveIn = new TreeSet<>(liveOut);
         }
-        // assert liveIn == bb.liveIn
     }
 }

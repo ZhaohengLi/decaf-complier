@@ -4,9 +4,14 @@ import decaf.driver.Config;
 import decaf.driver.Phase;
 import decaf.lowlevel.tac.Simulator;
 import decaf.lowlevel.tac.TacProg;
+import decaf.lowlevel.tac.TacFunc;
+import decaf.lowlevel.tac.TacInstr;
+import decaf.backend.dataflow.CFGBuilder;
+import decaf.backend.dataflow.LivenessAnalyzer;
 
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
+import java.util.*;
 
 /**
  * TAC optimization phase: optimize a TAC program.
@@ -20,7 +25,27 @@ public class Optimizer extends Phase<TacProg, TacProg> {
 
     @Override
     public TacProg transform(TacProg input) {
-        return input;
+      var analyzer = new LivenessAnalyzer<>(); //建立新的LivenessAnalyzer
+      var modifiedFuncs = new ArrayList<TacFunc>(); //经过优化的函数列表
+
+      for(var func : input.funcs) {
+        var builder = new CFGBuilder<>();
+        var cfg = builder.buildFrom(new ArrayList<>(func.getInstrSeq())); //建立CFG
+        analyzer.accept(cfg); //使用访问者模式对CFG进行访问
+
+        var modifiedFunc = new TacFunc(func.entry, func.numArgs);
+        modifiedFunc.tempUsed = func.tempUsed;
+        modifiedFunc.add(new TacInstr.Mark(func.entry));// 函数名
+
+        for (var bb : cfg) {
+          bb.label.ifPresent(b -> { modifiedFunc.add(new TacInstr.Mark(bb.label.get())); });
+          for (var loc : bb) if (!loc.modified) modifiedFunc.add((TacInstr)loc.instr);
+        }
+
+        modifiedFuncs.add(modifiedFunc);
+      }
+      return new TacProg(input.vtables, modifiedFuncs);
+      //return input;
     }
 
     @Override
